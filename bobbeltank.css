@@ -1,0 +1,22 @@
+
+body {
+    padding: 1em;
+}
+
+#bobbeltank {
+    background-color: orange;
+    height: 90vh;
+
+    -webkit-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+    -moz-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+    box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+}
+
+#controlpanel {
+    height: 90vh;
+}
+
+.log-entry {
+    margin-bottom: 0.5em;
+    font-size: 0.7em;
+}
