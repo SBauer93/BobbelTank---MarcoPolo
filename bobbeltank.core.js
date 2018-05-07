@@ -10,8 +10,34 @@ $('document').ready(function(){
     ControlPanel.init();
     JSONhandler.init();
 
-    JSONhandler.readFile('config.json');
+    JSONhandler.loadConfig();
 });
+
+
+var Entities = {
+
+    __entities: [],
+
+    setEntities: function(entity_list){
+        Entities.__entities = entity_list;
+    },
+
+    getEntities: function(){
+        return Entities.__entities;
+    },
+
+    getEntityReference: function(name) {
+        var entity = null;
+        var entity_list = Entities.__entities;
+
+        for (var i in entity_list)
+            if (entity_list[i]['name'] == name)
+                entity = entity_list[i];
+
+        return entity;
+    }
+
+};
 
 /**
  * The living space for simulated entities
@@ -80,7 +106,7 @@ var Simulator = {
         Simulator.stop();
         Simulator.__interval = setInterval(Simulator.performStep, timespan);
         Simulator.__interval_ms = timespan
-        Log.debug('Simulator speed changed to ' + Simulator.__interval_ms + 'ms', 5, 'simulator_speed_update');
+        Log.debug('Simulator interval changed to ' + Simulator.__interval_ms + 'ms', 5, 'simulator_speed_update');
     },
 
     /**
@@ -96,7 +122,11 @@ var Simulator = {
      * Performs a single simulation step
      */
     performStep: function(){
-        Log.debug('Performing simulation step ' + Simulator.__step_count, 1, "simulator_performing_step");
+        var begin = new Date();
+        //perform step here
+
+        var end = new Date();
+        Log.debug('Performing simulation step ' + Simulator.__step_count + ' for ' + (end.getTime() - begin.getTime()) + 'ms', 1, "simulator_performing_step");
         Simulator.__step_count++;
     }
 };
@@ -114,6 +144,14 @@ var ControlPanel = {
             $('#controlpanel_slider_speed').text(this.value/1000);
         };
         $('#controlpanel_slider_speed').text($('#simulationSpeed')[0].value/1000);
+    },
+
+    disable: function() {
+        
+    },
+
+    enable: function() {
+
     }
 };
 
@@ -123,10 +161,16 @@ var ControlPanel = {
  */
 var JSONhandler = {
 
-    json_root: 'json/',
+    config_file: 'json/config.json',
 
     init: function(){
         Log.debug("JSON handler ready");
+    },
+
+    loadConfig: function() {
+        JSONhandler.readFile(JSONhandler.config_file, function(json){
+            Log.debug('Updating config with ' + JSON.stringify(json));
+        });
     },
 
     /**
@@ -135,18 +179,21 @@ var JSONhandler = {
      * @param callback function called after asynchronous read. Json is provided as parameter
      */
     readFile: function(filename, callback) {
-        $.get(JSONhandler.json_root + filename)
-            .done(function () {
-                $.getJSON(JSONhandler.json_root + filename, function(json) {
-                    Log.info('Reading ' + JSONhandler.json_root + filename);
+        $.getJSON(filename)
+            .done(function (json) {
+                Log.info('Reading ' + filename);
+                if (callback) callback(json);
+            }).fail(function (error) {
+                if (error && error.responseText) {
+                    Log.debug("(Read failed but using fallback)");
+                    var json = JSON.parse(error.responseText);
                     if (callback) callback(json);
-                });
-
-            }).fail(function () {
-                Log.error('Can not read ' + JSONhandler.json_root + filename + '\n' +
-                    'The path is not correct or browser prevents reading local files\n' +
-                    'If this error occurs with correct path please use a http server');
-                return;
+                } else {
+                    Log.error('Can not read ' + filename + '\n' +
+                        'The path is not correct or browser prevents reading local files\n' +
+                        'If this error occurs with correct path please use a http server');
+                    return;
+                }
             });
     }
 };

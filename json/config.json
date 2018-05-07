@@ -1,3 +1,11 @@
 {
-  "testKey" : "testValue"
+  "Entities": [
+    {
+      "name": "Wilson",
+      "image": "images/150x150_bubble.png"
+    }, {
+      "name": "Malotzki",
+      "image": "images/150x150_bubble.png"
+    }
+  ]
 }
