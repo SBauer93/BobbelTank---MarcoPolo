@@ -20,6 +20,21 @@ var Entities = {
 
     setEntities: function(entity_list){
         Entities.__entities = entity_list;
+
+        // Log output
+        if (entity_list.length) {
+            var logmessage = 'Updated entity list to:';
+            var unnamed_count = 0;
+            for (var i in entity_list) {
+                if (entity_list[i]['name'])
+                    logmessage += '\n  ->  ' + entity_list[i]['name'];
+                else
+                    unnamed_count++
+            }
+
+            if (unnamed_count) logmessage += '\n Warning: ' + unnamed_count + ' entities without "name"-property added';
+            Log.debug(logmessage);
+        }
     },
 
     getEntities: function(){
@@ -144,6 +159,8 @@ var ControlPanel = {
             $('#controlpanel_slider_speed').text(this.value/1000);
         };
         $('#controlpanel_slider_speed').text($('#simulationSpeed')[0].value/1000);
+
+        ControlPanel.disable();
     },
 
     disable: function() {
@@ -169,7 +186,8 @@ var JSONhandler = {
 
     loadConfig: function() {
         JSONhandler.readFile(JSONhandler.config_file, function(json){
-            Log.debug('Updating config with ' + JSON.stringify(json));
+            Entities.setEntities(json.Entities);
+            ControlPanel.enable();
         });
     },
 
