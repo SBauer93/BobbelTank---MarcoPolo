@@ -1,0 +1,62 @@
+
+body {
+    padding: 1em;
+}
+
+#bobbeltank {
+    background-color: orange;
+    height: 90vh;
+
+    -webkit-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+    -moz-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+    box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+}
+
+#controlpanel {
+    height: 90vh;
+}
+
+.controlpanel_slider {
+    margin-bottom: 1em;
+}
+
+
+.slider {
+    -webkit-appearance: none;  /* Override default CSS styles */
+    appearance: none;
+    width: 100%; /* Full-width */
+    height: 15px;
+    border-radius: 5px;
+    background: #d3d3d3; /* Grey background */
+    outline: none; /* Remove outline */
+    opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+    -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
+}
+
+.slider:hover {
+    opacity: 1; /* Fully shown on mouse-over */
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Override default look */
+    appearance: none;
+    width: 20px; /* Set a specific slider handle width */
+    height: 20px;
+    border-radius: 50%;
+    background: orange; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+}
+
+.slider::-moz-range-thumb {
+    width: 20px; /* Set a specific slider handle width */
+    height: 20px;
+    border-radius: 50%;
+    background: orange; /* Green background */
+    cursor: pointer; /* Cursor on hover */
+}
+
+.log-entry {
+    margin-bottom: 0.5em;
+    font-size: 0.7em;
+}
