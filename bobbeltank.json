@@ -3,7 +3,7 @@
     {
       "name": "Wilson",
       "image": "images/150x150_bubble.png",
-      "position" : [10,40],
+      "position" : [1,40],
       "perceptions" : ["eyes"]
     }, {
       "name": "Malotzki",

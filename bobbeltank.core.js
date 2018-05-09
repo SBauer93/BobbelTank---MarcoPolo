@@ -27,6 +27,7 @@ var Entities = {
                 Tank.displayEntity(entity, true);
             }
             Log.debug(logMsg);
+            Tank.refresh();
         } else {
             Log.debug("Updated entity list to empty list");
         }
@@ -56,21 +57,33 @@ var Entities = {
  */
 var Tank = {
 
-    canvas: null,
-    context : null,
+    visible_canvas: null,
+    visible_canvas_ctx : null,
     width: 1000,
     height: 750,
-    __image_cache: {},
+    autoSize: true,
+    scratch_canvas: null,
+    scratch_canvas_ctx: null,
 
     init: function(){
-        Tank.canvas = $('#bobbeltank')[0];
-        Tank.canvas.width = Tank.width;
-        Tank.canvas.height = Tank.height;
-        Tank.context = Tank.canvas.getContext('2d');
-        Tank.context.transform(1, 0, 0, -1, 0, Tank.height)
-        Tank.clear();
+        Tank.visible_canvas = $('#bobbeltank')[0];
+        if (Tank.autoSize) {
+            Tank.width = Math.round($('#tank').width());
+            Tank.height = Math.round($('#tank').height());
+        }
+        Tank.visible_canvas.width = Tank.width;
+        Tank.visible_canvas.height = Tank.height;
+        Tank.visible_canvas_ctx = Tank.visible_canvas.getContext('2d');
+        Tank.visible_canvas_ctx.transform(1, 0, 0, -1, 0, Tank.height);
 
-        Log.debug('Tank of size ' + Tank.canvas.width + 'x' + Tank.canvas.height + ' ready');
+        //setup scratch canvas. This is the canvas to paint on and transver at the end to real canvas
+        Tank.scratch_canvas = $('<canvas/>')[0];
+        Tank.scratch_canvas.width = Tank.width;
+        Tank.scratch_canvas.height = Tank.height;
+        Tank.scratch_canvas_ctx = Tank.scratch_canvas.getContext('2d');
+
+        Log.debug('Tank of size ' + Tank.visible_canvas.width + 'x' + Tank.visible_canvas.height + ' ready');
+        if (Tank.autoSize) Log.debug('Tank sized automatically');
     },
 
     /**
@@ -88,13 +101,13 @@ var Tank = {
             return;
         }
 
-        var ctx = Tank.context;
+        var ctx = Tank.scratch_canvas_ctx;
 
-        var image = new Image();
-        image.src = imgSrc;
-        image.onload = function() {
-            ctx.drawImage(image, posX-10, posY-10, 20, 20);
-        };
+        if (entity.image_cache) {
+            Tank.scratch_canvas_ctx.drawImage(entity.image_cache, posX-10, posY-10, 20, 20);
+        } else if (entity.image_src) {
+            Tank.loadImage(imgSrc, posX, posY, 20, 20);
+        }
 
         if (withPerception) {
             for (var sensorTag in entity.sensor_polygons){
@@ -116,11 +129,42 @@ var Tank = {
         }
     },
 
+    images_loading: 0,
     /**
-     * Clears canvas completely
+     * Adds image with specified source path to scretch canvas and performs refresh after loading if requested
+     * @param source path to image
+     * @param posX position of image
+     * @param posY position of image
+     * @param sizeX size in pixel of image
+     * @param sizeY size in pixel of image
      */
-    clear: function(){
-        Tank.context.clearRect(0, 0, Tank.width, Tank.height)
+    loadImage: function(source, posX, posY, sizeX, sizeY){
+        Tank.images_loading++;
+        var image = new Image();
+        image.src = source;
+        image.onload = function() {
+            Tank.scratch_canvas_ctx.drawImage(image, posX-10, posY-10, sizeX, sizeY);
+            Tank.images_loading--;
+            if (Tank.refresh_requested) Tank.refresh();
+        };
+    },
+
+    refresh_requested: false,
+    /**
+     * A refresh (transver of image from scretch to visible canvas only can be performed if no images are loading
+     * If images_loading > 0 transfered image would be incomplete
+     * refresh_requested is a flag to check wheather there is an outstanding refresh request
+     */
+    refresh: function(){
+        Tank.refresh_requested = true;
+        if (!Tank.images_loading) {
+            Tank.visible_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
+            Tank.visible_canvas_ctx.beginPath();
+            Tank.visible_canvas_ctx.drawImage(Tank.scratch_canvas, 0, 0);
+            Tank.scratch_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
+            Tank.scratch_canvas_ctx.beginPath();
+            Tank.refresh_requested = false;
+        }
     }
 };
 
@@ -169,11 +213,12 @@ var Simulator = {
         for (var i in entities){
             var entity = entities[i];
 
+            entity.posX += 5;
+            entity.updateSensors();
 
-
-            Tank.clear();
             Tank.displayEntity(entity, true);
         }
+        Tank.refresh();
 
         var end = new Date();
         Log.debug('Performing simulation step ' + Simulator.__step_count + ' for ' + (end.getTime() - begin.getTime()) + 'ms', 1, "simulator_performing_step");
@@ -384,7 +429,6 @@ function Entity(entity_object, sensors_object) {
     //only sets position if input pos is array with length 2
     var pos = entity_object['position']
     if (Array.isArray(pos) && pos.length === 2) {
-        this.position = pos;
         this.posX = pos[0];
         this.posY = pos[1];
         this.direction = entity_object['direction'] | 0;
@@ -402,13 +446,23 @@ function Entity(entity_object, sensors_object) {
         }
     }
     this.sensor_polygons = {};
-    this.updatePos(this.position, this.direction);
+    this.updateSensors();
 
     //set unique ID
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
     }
     this.uuid = s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+
+    var image_src = entity_object['image'];
+    if (image_src) {
+        var img = new Image();
+        var alias = this;
+        img.onload = function(){
+            alias.image_cache = img;
+        }
+        img.src = image_src;
+    }
 }
 
 
@@ -419,24 +473,20 @@ Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
 
 };
 
+
 /**
- * Updates entities position, sensor_polygons etc. according to new position
- * @param newPos new position coordinate as [x,y]
- * @param rotation degrees of rotation 0 is parallel to x axis, 90 parallel to y axis, 180 parallel to -x axis ...
+ * Updates entities sensor_polygons etc. according to position and direction properties
  */
-Entity.prototype.updatePos = function(newPos, rotation){
-    if (!Array.isArray(newPos) || newPos.length !== 2) {
-        Log.error("Invalid position update for " + this);
-        return;
-    }
-    this.position = newPos;
-    this.posX = newPos[0];
-    this.posY = newPos[1];
+Entity.prototype.updateSensors = function(){
+    var posX = this.posX;
+    var posY = this.posY;
+    var direction = this.direction;
+
     for (var sensor in this.__sensor_perimeters){
         this.sensor_polygons[sensor] = this.__sensor_perimeters[sensor].map(function(polyEdge, index){
-            var newPolyEdge = [polyEdge[0]+newPos[0], polyEdge[1]+newPos[1]]; //move to point
-            if (rotation) {
-                newPolyEdge = Entity.__rotateAroundOrigin(newPolyEdge[0], newPolyEdge[1], newPos[0], newPos[1], rotation);
+            var newPolyEdge = [polyEdge[0]+posX, polyEdge[1]+posY]; //move to point
+            if (direction) {
+                newPolyEdge = Entity.__rotateAroundOrigin(newPolyEdge[0], newPolyEdge[1], posX, posY, direction);
             }
             return newPolyEdge;
         });
@@ -450,7 +500,7 @@ Entity.prototype.updatePos = function(newPos, rotation){
 Entity.prototype.toString = function(){
     return ' > "'
         + (this.name? this.name: '"name"-property missing!')
-        + (this.position? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.position + ']')
+        + (this.posX && this.posY? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.posX +', ' + this.posY + ']')
         + (this.image_src? '': ' without "image" property!')
         + (Object.keys(this.__sensor_perimeters).length? ' with ['+Object.keys(this.__sensor_perimeters)+']': ' without any "perceptions" defined!');
 };

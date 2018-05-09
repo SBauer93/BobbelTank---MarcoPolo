@@ -3,13 +3,21 @@ body {
     padding: 1em;
 }
 
-#bobbeltank {
+#tank {
+    position: relative;
     background-color: orange;
     height: 90vh;
+    padding: 0;
 
     -webkit-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
     -moz-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
     box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
+}
+
+canvas {
+    position: absolute;
+    height: 100%;
+    width: 100%;
 }
 
 #controlpanel {
