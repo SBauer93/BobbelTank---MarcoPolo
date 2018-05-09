@@ -2,48 +2,6 @@
 
 /**
  * ------------------------------
- * CLASS DEFINITIONS
- * ------------------------------
- */
-
-/**
- * Entity Class description. Use var foo = new Entity(entity_object) for example from config
- * (To reference the entity use the unique ID instead of the name)
- * Entities properties are: name, image_src, position and uuid.
- * @param entity_object is an single entity object from config with keys name, image, position etc..
- * @constructor adds fields. Property position will stay undefined if invalid
- */
-function Entity(entity_object) {
-    this.name = entity_object['name'];
-    this.image_src = entity_object['image'];
-
-    //only sets position if input pos is array with length 2
-    var pos = entity_object['position']
-    if (Array.isArray(pos) && pos.length === 2) {
-        this.position = pos;
-        this.posX = pos[0];
-        this.posY = pos[1];
-    }
-
-    //set unique ID
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-    }
-    this.uuid = s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-}
-/**
- * Overrides default string output for objects of Entity class
- * @returns {string}
- */
-Entity.prototype.toString = function(){
-    return ' > "'
-        + (this.name? this.name: '"name"-property missing!')
-        + (this.position? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.position + ']')
-        + (this.image_src? '': ' without "image" property!');
-};
-
-/**
- * ------------------------------
  * FUNCTIONS, CONTROLLER, MODEL
  * ------------------------------
  */
@@ -56,17 +14,17 @@ var Entities = {
 
     __entities: [],
 
-    setEntities: function(input_list){
+    setEntities: function(input_entities, sensors){
         Entities.__entities = [];
 
-        if (input_list.length) {
+        if (input_entities.length) {
 
             var logMsg = 'Updated entity list to:';
-            for (var i in input_list) {
-                var entity = new Entity(input_list[i]);
+            for (var i in input_entities) {
+                var entity = new Entity(input_entities[i], sensors);
                 logMsg += '\n' + entity;
                 Entities.__entities.push(entity);
-                Tank.paint(entity);
+                Tank.displayEntity(entity, true);
             }
             Log.debug(logMsg);
         } else {
@@ -102,18 +60,26 @@ var Tank = {
     context : null,
     width: 1000,
     height: 750,
+    __image_cache: {},
 
     init: function(){
         Tank.canvas = $('#bobbeltank')[0];
         Tank.canvas.width = Tank.width;
         Tank.canvas.height = Tank.height;
         Tank.context = Tank.canvas.getContext('2d');
+        Tank.context.transform(1, 0, 0, -1, 0, Tank.height)
         Tank.clear();
 
         Log.debug('Tank of size ' + Tank.canvas.width + 'x' + Tank.canvas.height + ' ready');
     },
 
-    paint: function(entity){
+    /**
+     * Paints an Entity-Object to canvas
+     *
+     * @param entity Entity-Object
+     * @param withPerception if true perception areas are painted
+     */
+    displayEntity: function(entity, withPerception) {
         var imgSrc = entity.image_src;
         var posX = entity.posX;
         var posY = entity.posY;
@@ -122,11 +88,32 @@ var Tank = {
             return;
         }
 
-        var bubble = new Image();
-        bubble.src = imgSrc;
-        bubble.onload = function() {
-            Tank.context.drawImage(bubble, posX, posY, 20, 20);
+        var ctx = Tank.context;
+
+        var image = new Image();
+        image.src = imgSrc;
+        image.onload = function() {
+            ctx.drawImage(image, posX-10, posY-10, 20, 20);
         };
+
+        if (withPerception) {
+            for (var sensorTag in entity.sensor_polygons){
+                var coords = entity.sensor_polygons[sensorTag];
+                ctx.fillStyle = entity.sensor_colors[sensorTag];
+
+                if (!coords.length) {
+                    Log.error('Can not paint invalid coords for ' + sensorTag);
+                    return;
+                }
+                var lastCoord = coords.slice(-1)[0];
+                ctx.moveTo(lastCoord[0], lastCoord[1]);
+                for (var i in coords){
+                    ctx.lineTo(coords[i][0],coords[i][1]);
+                }
+                ctx.closePath();
+            }
+            ctx.fill();
+        }
     },
 
     /**
@@ -134,7 +121,6 @@ var Tank = {
      */
     clear: function(){
         Tank.context.clearRect(0, 0, Tank.width, Tank.height)
-        Log.debug('Cleaned up tank');
     }
 };
 
@@ -179,6 +165,16 @@ var Simulator = {
         var begin = new Date();
         //perform step here
 
+        var entities = Entities.getEntities();
+        for (var i in entities){
+            var entity = entities[i];
+
+
+
+            Tank.clear();
+            Tank.displayEntity(entity, true);
+        }
+
         var end = new Date();
         Log.debug('Performing simulation step ' + Simulator.__step_count + ' for ' + (end.getTime() - begin.getTime()) + 'ms', 1, "simulator_performing_step");
         Simulator.__step_count++;
@@ -213,20 +209,36 @@ var ControlPanel = {
 
 /**
  * Handles JSON-Files reading
+ * Make sure config_file and bobbeltank_file exist and if empty at least contain these brackets {}
  * @type {{init: JSONhandler.init, readFile: JSONhandler.readFile}}
  */
 var JSONhandler = {
 
     config_file: 'json/config.json',
+    bobbeltank_file: 'bobbeltank.json',
 
     init: function(){
         Log.debug("JSON handler ready");
     },
 
+    /**
+     * For loading of configuration file
+     */
     loadConfig: function() {
         JSONhandler.readFile(JSONhandler.config_file, function(json){
-            Entities.setEntities(json.Entities);
+            /* do something with config here */
+
+            JSONhandler.loadBobbelTankFile();
             ControlPanel.enable();
+        });
+    },
+
+    /**
+     * For loading of bobble-file containing entities etc.
+     */
+    loadBobbelTankFile: function() {
+        JSONhandler.readFile(JSONhandler.bobbeltank_file, function(json){
+            Entities.setEntities(json['Entities'], json['Sensors']);
         });
     },
 
@@ -236,7 +248,7 @@ var JSONhandler = {
      * @param callback function called after asynchronous read. Json is provided as parameter
      */
     readFile: function(filename, callback) {
-        $.getJSON(filename)
+        $.getJSON(filename+'?antiCache='+Math.random())
             .done(function (json) {
                 Log.info('Reading ' + filename);
                 if (callback) callback(json);
@@ -281,7 +293,7 @@ var Log = {
             Log.error('In line ' + lineno + ' of ' + (source.replace(/^.*[\\\/]/, '')) + '\n -> ' + error + '\n -> (' + message + ')', 60);
         }
 
-        console.log('Logging active');
+        console.log('Console redirected to Bobbel log');
     },
 
     /**
@@ -348,6 +360,99 @@ var Log = {
             logEntry.fadeOut(2000, function(){logEntry.remove()});
         }, time);
     }
+};
+
+
+/**
+ * ------------------------------
+ * CLASS DEFINITIONS
+ * ------------------------------
+ */
+
+/**
+ * Entity Class description. Use var foo = new Entity(entity_object, sensors_object)
+ * Parameters entity_object a single entity and the sensors description as described in bobbeltank.json
+ * (To reference the entity use the unique ID instead of the name)
+ * Entities properties are: name, image_src, position, uuid and sensor_polygons.
+ * @param entity_object is an single entity object from config with keys name, image, position etc..
+ * @constructor adds fields. Property position will stay undefined if invalid
+ */
+function Entity(entity_object, sensors_object) {
+    this.name = entity_object['name'];
+    this.image_src = entity_object['image'];
+
+    //only sets position if input pos is array with length 2
+    var pos = entity_object['position']
+    if (Array.isArray(pos) && pos.length === 2) {
+        this.position = pos;
+        this.posX = pos[0];
+        this.posY = pos[1];
+        this.direction = entity_object['direction'] | 0;
+    }
+
+    //transfer definitions of attached sensors into entity (only if definitions exist)
+    var perceptionTags = entity_object['perceptions'];
+    this.__sensor_perimeters = {};
+    this.sensor_colors = {};
+    for (var tag_i in perceptionTags) {
+        var tag = perceptionTags[tag_i];
+        if (sensors_object[tag]){
+            this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
+            this.sensor_colors[tag] = sensors_object[tag]['color'];
+        }
+    }
+    this.sensor_polygons = {};
+    this.updatePos(this.position, this.direction);
+
+    //set unique ID
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+    }
+    this.uuid = s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
+
+
+Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
+    angle = angle * Math.PI / 180.0;
+    return [Math.cos(angle) * (pointX-originX) - Math.sin(angle) * (pointY-originY) + originX,
+        Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY]
+
+};
+
+/**
+ * Updates entities position, sensor_polygons etc. according to new position
+ * @param newPos new position coordinate as [x,y]
+ * @param rotation degrees of rotation 0 is parallel to x axis, 90 parallel to y axis, 180 parallel to -x axis ...
+ */
+Entity.prototype.updatePos = function(newPos, rotation){
+    if (!Array.isArray(newPos) || newPos.length !== 2) {
+        Log.error("Invalid position update for " + this);
+        return;
+    }
+    this.position = newPos;
+    this.posX = newPos[0];
+    this.posY = newPos[1];
+    for (var sensor in this.__sensor_perimeters){
+        this.sensor_polygons[sensor] = this.__sensor_perimeters[sensor].map(function(polyEdge, index){
+            var newPolyEdge = [polyEdge[0]+newPos[0], polyEdge[1]+newPos[1]]; //move to point
+            if (rotation) {
+                newPolyEdge = Entity.__rotateAroundOrigin(newPolyEdge[0], newPolyEdge[1], newPos[0], newPos[1], rotation);
+            }
+            return newPolyEdge;
+        });
+    }
+};
+
+/**
+ * Overrides default string output for Entity class
+ * @returns {string}
+ */
+Entity.prototype.toString = function(){
+    return ' > "'
+        + (this.name? this.name: '"name"-property missing!')
+        + (this.position? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.position + ']')
+        + (this.image_src? '': ' without "image" property!')
+        + (Object.keys(this.__sensor_perimeters).length? ' with ['+Object.keys(this.__sensor_perimeters)+']': ' without any "perceptions" defined!');
 };
 
 /**

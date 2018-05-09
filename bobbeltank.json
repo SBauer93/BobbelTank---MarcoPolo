@@ -1,0 +1,42 @@
+{
+  "Entities": [
+    {
+      "name": "Wilson",
+      "image": "images/150x150_bubble.png",
+      "position" : [10,40],
+      "perceptions" : ["eyes"]
+    }, {
+      "name": "Malotzki",
+      "image": "images/150x150_bubble.png",
+      "position" : [10,80],
+      "perceptions" : ["eyes"]
+    }, {
+      "name": "PEWPEW",
+      "image": "images/150x150_bubble.png",
+      "position" : [100,20],
+      "perceptions" : ["eyes"]
+    }, {
+      "name": "The other guy",
+      "image": "images/150x150_bubble.png",
+      "position" : [120,30],
+      "perceptions" : ["eyes"]
+    }, {
+      "name": "Hannah",
+      "image": "images/150x150_bubble.png",
+      "position" : [500,375],
+      "perceptions" : ["eyes", "ears"],
+      "direction" : 100
+    }
+  ],
+
+  "Sensors": {
+    "eyes": {
+      "perimeter": [[0,0], [40,20], [40,-20]],
+      "color" : "#FFCC00"
+    },
+    "ears": {
+      "perimeter": [[-20,20], [20,20], [20,-20], [-20,-20]],
+      "color" : "#FFBB00"
+    }
+  }
+}
