@@ -1,39 +1,76 @@
 'use strict';
 
 /**
- * EntryPoint to core javascript
+ * ------------------------------
+ * CLASS DEFINITIONS
+ * ------------------------------
  */
-$('document').ready(function(){
-    Log.init();
-    Tank.init();
-    Simulator.init();
-    ControlPanel.init();
-    JSONhandler.init();
 
-    JSONhandler.loadConfig();
-});
+/**
+ * Entity Class description. Use var foo = new Entity(entity_object) for example from config
+ * (To reference the entity use the unique ID instead of the name)
+ * Entities properties are: name, image_src, position and uuid.
+ * @param entity_object is an single entity object from config with keys name, image, position etc..
+ * @constructor adds fields. Property position will stay undefined if invalid
+ */
+function Entity(entity_object) {
+    this.name = entity_object['name'];
+    this.image_src = entity_object['image'];
 
+    //only sets position if input pos is array with length 2
+    var pos = entity_object['position']
+    if (Array.isArray(pos) && pos.length === 2) {
+        this.position = pos;
+        this.posX = pos[0];
+        this.posY = pos[1];
+    }
 
+    //set unique ID
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+    }
+    this.uuid = s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+}
+/**
+ * Overrides default string output for objects of Entity class
+ * @returns {string}
+ */
+Entity.prototype.toString = function(){
+    return ' > "'
+        + (this.name? this.name: '"name"-property missing!')
+        + (this.position? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.position + ']')
+        + (this.image_src? '': ' without "image" property!');
+};
+
+/**
+ * ------------------------------
+ * FUNCTIONS, CONTROLLER, MODEL
+ * ------------------------------
+ */
+
+/**
+ * Handles all Entities in the system
+ * @type {{__entities: Array, setEntities: Entities.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
+ */
 var Entities = {
 
     __entities: [],
 
-    setEntities: function(entity_list){
-        Entities.__entities = entity_list;
+    setEntities: function(input_list){
+        Entities.__entities = [];
 
-        // Log output
-        if (entity_list.length) {
-            var logmessage = 'Updated entity list to:';
-            var unnamed_count = 0;
-            for (var i in entity_list) {
-                if (entity_list[i]['name'])
-                    logmessage += '\n  ->  ' + entity_list[i]['name'];
-                else
-                    unnamed_count++
+        if (input_list.length) {
+
+            var logMsg = 'Updated entity list to:';
+            for (var i in input_list) {
+                var entity = new Entity(input_list[i]);
+                logMsg += '\n' + entity;
+                Entities.__entities.push(entity);
+                Tank.paint(entity);
             }
-
-            if (unnamed_count) logmessage += '\n Warning: ' + unnamed_count + ' entities without "name"-property added';
-            Log.debug(logmessage);
+            Log.debug(logMsg);
+        } else {
+            Log.debug("Updated entity list to empty list");
         }
     },
 
@@ -41,15 +78,16 @@ var Entities = {
         return Entities.__entities;
     },
 
-    getEntityReference: function(name) {
-        var entity = null;
-        var entity_list = Entities.__entities;
+    getEntityByUUID: function(uuid) {
+        for (var i in Entities.__entities)
+            if (Entities.__entities[i]['uuid'] === uuid)
+                return Entities.__entities[i];
+    },
 
-        for (var i in entity_list)
-            if (entity_list[i]['name'] == name)
-                entity = entity_list[i];
-
-        return entity;
+    getEntityByName: function(name) {
+        for (var i in Entities.__entities)
+            if (Entities.__entities[i]['name'] === name)
+                return Entities.__entities[i];
     }
 
 };
@@ -72,22 +110,23 @@ var Tank = {
         Tank.context = Tank.canvas.getContext('2d');
         Tank.clear();
 
-        Tank.paint();
-        Log.debug('Tank size ' + Tank.canvas.width + 'x' + Tank.canvas.height);
-        Log.debug('Tank');
+        Log.debug('Tank of size ' + Tank.canvas.width + 'x' + Tank.canvas.height + ' ready');
     },
 
-    paint: function(){
-        Log.debug('Painting test');
+    paint: function(entity){
+        var imgSrc = entity.image_src;
+        var posX = entity.posX;
+        var posY = entity.posY;
+        if (!imgSrc || !posX || !posY) {
+            Log.error("Painting information incomplete on entity\n" + entity);
+            return;
+        }
 
         var bubble = new Image();
-        bubble.src = "images/150x150_bubble.png";
+        bubble.src = imgSrc;
         bubble.onload = function() {
-            Tank.context.drawImage(bubble,10,10, 20, 20);
-            Log.debug('Image loaded');
+            Tank.context.drawImage(bubble, posX, posY, 20, 20);
         };
-
-        Log.debug('Painting done');
     },
 
     /**
@@ -310,3 +349,17 @@ var Log = {
         }, time);
     }
 };
+
+/**
+ * EntryPoint to core javascript if document loaded
+ * Can be seen as "main-method"
+ */
+$('document').ready(function(){
+    Log.init();
+    Tank.init();
+    Simulator.init();
+    ControlPanel.init();
+    JSONhandler.init();
+
+    JSONhandler.loadConfig();
+});
