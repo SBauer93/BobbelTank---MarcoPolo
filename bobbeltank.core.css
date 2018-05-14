@@ -64,6 +64,14 @@ canvas {
     cursor: pointer; /* Cursor on hover */
 }
 
+.controlpanel_buttons {
+    margin-bottom: 1em;
+}
+
+.control_btn {
+    padding:0.5em;
+}
+
 .log-entry {
     margin-bottom: 0.5em;
     font-size: 0.7em;

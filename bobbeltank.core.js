@@ -24,12 +24,26 @@ var Entities = {
                 var entity = new Entity(input_entities[i], sensors);
                 logMsg += '\n' + entity;
                 Entities.__entities.push(entity);
-                Tank.displayEntity(entity, true);
+                Tank.displayEntity(entity, true, true);
             }
             Log.debug(logMsg);
-            Tank.refresh();
+            Tank.flush();
         } else {
             Log.debug("Updated entity list to empty list");
+        }
+    },
+
+    setMovementBounds: function(minX, minY, maxX, maxY) {
+        Log.debug('Restricting movement to X:' + minX + '-' + maxX + ' Y:' + minY + '-' + maxY);
+        for (var i in Entities.__entities){
+            Entities.__entities[i].setMovementBounds(minX, minY, maxX, maxY);
+        }
+    },
+
+    clearMovementBounds: function() {
+        Log.debug('Removing movement restrictions of entities');
+        for (var i in Entities.__entities){
+            Entities.__entities[i].clearMovementBounds();
         }
     },
 
@@ -52,8 +66,8 @@ var Entities = {
 };
 
 /**
- * The living space for simulated entities
- * @type {{canvas: null, context: null, width: number, height: number, init: Tank.init, paint: Tank.paint, clear: Tank.clear}}
+ * Tank visualization
+ * @type {{visible_canvas: null, visible_canvas_ctx: null, width: number, height: number, autoSize: boolean, scratch_canvas: null, scratch_canvas_ctx: null, image_canvas: null, image_canvas_ctx: null, image_cache: {}, init: Tank.init, displayEntity: Tank.displayEntity, displayPerception: Tank.displayPerception, images_loading: number, displayImage: Tank.displayImage, flush_requested: boolean, flush: Tank.flush}}
  */
 var Tank = {
 
@@ -64,6 +78,11 @@ var Tank = {
     autoSize: true,
     scratch_canvas: null,
     scratch_canvas_ctx: null,
+    image_canvas: null,
+    image_canvas_ctx: null,
+    image_cache : {},
+
+    enabled: true,
 
     init: function(){
         Tank.visible_canvas = $('#bobbeltank')[0];
@@ -76,11 +95,17 @@ var Tank = {
         Tank.visible_canvas_ctx = Tank.visible_canvas.getContext('2d');
         Tank.visible_canvas_ctx.transform(1, 0, 0, -1, 0, Tank.height);
 
-        //setup scratch canvas. This is the canvas to paint on and transver at the end to real canvas
+        //setup scratch canvas. This is the canvas to paint on and transfer at the end to real canvas
         Tank.scratch_canvas = $('<canvas/>')[0];
         Tank.scratch_canvas.width = Tank.width;
         Tank.scratch_canvas.height = Tank.height;
         Tank.scratch_canvas_ctx = Tank.scratch_canvas.getContext('2d');
+
+        //setup image canvas. This is the canvas to paint on and transfer at the end to real canvas
+        Tank.image_canvas = $('<canvas/>')[0];
+        Tank.image_canvas.width = Tank.width;
+        Tank.image_canvas.height = Tank.height;
+        Tank.image_canvas_ctx = Tank.image_canvas.getContext('2d');
 
         Log.debug('Tank of size ' + Tank.visible_canvas.width + 'x' + Tank.visible_canvas.height + ' ready');
         if (Tank.autoSize) Log.debug('Tank sized automatically');
@@ -92,90 +117,126 @@ var Tank = {
      * @param entity Entity-Object
      * @param withPerception if true perception areas are painted
      */
-    displayEntity: function(entity, withPerception) {
-        var imgSrc = entity.image_src;
+    displayEntity: function(entity, withPerception, withImage) {
+        if (!Tank.enabled) return;
+
         var posX = entity.posX;
         var posY = entity.posY;
-        if (!imgSrc || !posX || !posY) {
-            Log.error("Painting information incomplete on entity\n" + entity);
+        if (posX === null || posY === null) {
+            Log.error("Position information incomplete on entity\n" + entity);
             return;
-        }
-
-        var ctx = Tank.scratch_canvas_ctx;
-
-        if (entity.image_cache) {
-            Tank.scratch_canvas_ctx.drawImage(entity.image_cache, posX-10, posY-10, 20, 20);
-        } else if (entity.image_src) {
-            Tank.loadImage(imgSrc, posX, posY, 20, 20);
         }
 
         if (withPerception) {
             for (var sensorTag in entity.sensor_polygons){
-                var coords = entity.sensor_polygons[sensorTag];
-                ctx.fillStyle = entity.sensor_colors[sensorTag];
-
-                if (!coords.length) {
-                    Log.error('Can not paint invalid coords for ' + sensorTag);
-                    return;
-                }
-                var lastCoord = coords.slice(-1)[0];
-                ctx.moveTo(lastCoord[0], lastCoord[1]);
-                for (var i in coords){
-                    ctx.lineTo(coords[i][0],coords[i][1]);
-                }
-                ctx.closePath();
+                Tank.displayPerception(entity.sensor_polygons[sensorTag], entity.sensor_colors[sensorTag], 1);
             }
-            ctx.fill();
         }
+
+        if (withImage) {
+            Tank.displayImage(entity.image_src, posX, posY, 20, 20);
+        }
+    },
+
+    /**
+     * Displays sensorPolygon
+     * @param sensorPolygon polygon coordinates
+     * @param color polygon color
+     * @param intensity polygon opacity (1 is full)
+     */
+    displayPerception: function(sensorPolygon, color, intensity){
+        if (!Tank.enabled) return;
+
+        var ctx = Tank.scratch_canvas_ctx;
+        ctx.fillStyle = color;
+        if (intensity) ctx.globalAlpha=intensity;
+
+        if (!sensorPolygon.length) {
+            Log.error('Can not paint invalid sensorPolygon');
+            return;
+        }
+        var lastCoord = sensorPolygon.slice(-1)[0];
+        ctx.moveTo(lastCoord[0], lastCoord[1]);
+        for (var i in sensorPolygon){
+            ctx.lineTo(sensorPolygon[i][0],sensorPolygon[i][1]);
+        }
+        ctx.closePath();
+        ctx.fill();
+
+        if (intensity) ctx.globalAlpha=1;
     },
 
     images_loading: 0,
     /**
-     * Adds image with specified source path to scretch canvas and performs refresh after loading if requested
+     * Adds image with specified source path to scretch canvas and performs flush after loading if requested
      * @param source path to image
      * @param posX position of image
      * @param posY position of image
      * @param sizeX size in pixel of image
      * @param sizeY size in pixel of image
      */
-    loadImage: function(source, posX, posY, sizeX, sizeY){
+    displayImage: function(source, posX, posY, sizeX, sizeY){
+        if (!Tank.enabled) return;
+
         Tank.images_loading++;
-        var image = new Image();
-        image.src = source;
-        image.onload = function() {
-            Tank.scratch_canvas_ctx.drawImage(image, posX-10, posY-10, sizeX, sizeY);
+
+        if (Tank.image_cache[source]){
+            Tank.image_canvas_ctx.drawImage(Tank.image_cache[source], posX-Math.round(sizeX/2), posY-Math.round(sizeY/2), sizeX, sizeY);
             Tank.images_loading--;
-            if (Tank.refresh_requested) Tank.refresh();
-        };
+            if (Tank.flush_requested) Tank.flush();
+        } else {
+            var image = new Image();
+            image.onload = function() {
+                Tank.image_canvas_ctx.drawImage(image, posX-10, posY-10, sizeX, sizeY);
+                Tank.image_cache[source] = image;
+                Tank.images_loading--;
+                if (Tank.flush_requested) Tank.flush();
+            };
+            image.src = source;
+        }
     },
 
-    refresh_requested: false,
+    flush_requested: false,
     /**
-     * A refresh (transver of image from scretch to visible canvas only can be performed if no images are loading
+     * A flush (transver of image from scretch to visible canvas only can be performed if no images are loading
      * If images_loading > 0 transfered image would be incomplete
-     * refresh_requested is a flag to check wheather there is an outstanding refresh request
+     * flush_requested is a flag to check wheather there is an outstanding flush request
      */
-    refresh: function(){
-        Tank.refresh_requested = true;
+    flush: function(){
+        if (!Tank.enabled) return;
+
+        Tank.flush_requested = true;
         if (!Tank.images_loading) {
             Tank.visible_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
             Tank.visible_canvas_ctx.beginPath();
             Tank.visible_canvas_ctx.drawImage(Tank.scratch_canvas, 0, 0);
             Tank.scratch_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
             Tank.scratch_canvas_ctx.beginPath();
-            Tank.refresh_requested = false;
+            Tank.visible_canvas_ctx.drawImage(Tank.image_canvas, 0, 0);
+            Tank.image_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
+            Tank.image_canvas_ctx.beginPath();
+            Tank.flush_requested = false;
+        }
+    },
+
+    toggleEnabled: function() {
+        Tank.enabled = !Tank.enabled;
+        if (Tank.enabled) {
+            Log.info("Visualization ON", 100, 'tank_enabled_state');
+        } else {
+            Log.info("Visualization OFF", 100, 'tank_enabled_state');
         }
     }
 };
 
 /**
- * Handles simulation process
- * @type {{__interval: null, __interval_ms: number, init: Simulator.init, setInterval: Simulator.setInterval, stop: Simulator.stop, performStep: Simulator.performStep}}
+ *
+ * @type {{__interval_ref: null, __interval_ms: number, __step_count: number, init: Simulator.init, setInterval: Simulator.setInterval, stop: Simulator.stop, performStep: Simulator.performStep}}
  */
 var Simulator = {
 
-    __interval: null,
-    __interval_ms: -1,
+    __interval_ref: null,
+    __interval_ms: 500,
     __step_count: 0,
 
     init : function(){
@@ -188,8 +249,8 @@ var Simulator = {
      */
     setInterval : function(timespan){
         Simulator.stop();
-        Simulator.__interval = setInterval(Simulator.performStep, timespan);
-        Simulator.__interval_ms = timespan
+        Simulator.__interval_ref = setInterval(Simulator.performStep, timespan);
+        Simulator.__interval_ms = timespan;
         Log.debug('Simulator interval changed to ' + Simulator.__interval_ms + 'ms', 5, 'simulator_speed_update');
     },
 
@@ -197,8 +258,8 @@ var Simulator = {
      * Stops simulation
      */
     stop : function(){
-        if (Simulator.__interval) clearInterval(Simulator.__interval);
-        Simulator.__interval = null;
+        if (Simulator.__interval_ref) clearInterval(Simulator.__interval_ref);
+        Simulator.__interval_ref = null;
         Simulator.__interval_ms = -1;
     },
 
@@ -210,15 +271,20 @@ var Simulator = {
         //perform step here
 
         var entities = Entities.getEntities();
+
         for (var i in entities){
             var entity = entities[i];
 
-            entity.posX += 5;
-            entity.updateSensors();
+            if (Math.random() > 0.5) {
+                entity.rotate(10);
+            } else {
+                entity.rotate(-10);
+            }
+            entity.move(1);
 
-            Tank.displayEntity(entity, true);
+            Tank.displayEntity(entity, true, true);
         }
-        Tank.refresh();
+        Tank.flush();
 
         var end = new Date();
         Log.debug('Performing simulation step ' + Simulator.__step_count + ' for ' + (end.getTime() - begin.getTime()) + 'ms', 1, "simulator_performing_step");
@@ -240,6 +306,23 @@ var ControlPanel = {
         };
         $('#controlpanel_slider_speed').text($('#simulationSpeed')[0].value/1000);
 
+        $('#start_btn').click(function(){
+            Simulator.setInterval($('#simulationSpeed')[0].value);
+        });
+
+        $('#pause_btn').click(function(){
+            Simulator.stop();
+        });
+
+        $('#restart_btn').click(function(){
+            Simulator.stop();
+            Parameters.loadConfig();
+        });
+
+        $('#noOutput_btn').click(function(){
+            Tank.toggleEnabled();
+        });
+
         ControlPanel.disable();
     },
 
@@ -255,12 +338,14 @@ var ControlPanel = {
 /**
  * Handles JSON-Files reading
  * Make sure config_file and bobbeltank_file exist and if empty at least contain these brackets {}
- * @type {{init: JSONhandler.init, readFile: JSONhandler.readFile}}
+ * @type {{init: Parameters.init, readFile: Parameters.readFile}}
  */
-var JSONhandler = {
+var Parameters = {
 
     config_file: 'json/config.json',
     bobbeltank_file: 'bobbeltank.json',
+
+    flags: {},
 
     init: function(){
         Log.debug("JSON handler ready");
@@ -270,10 +355,14 @@ var JSONhandler = {
      * For loading of configuration file
      */
     loadConfig: function() {
-        JSONhandler.readFile(JSONhandler.config_file, function(json){
+        Parameters.readFile(Parameters.config_file, function(json){
             /* do something with config here */
 
-            JSONhandler.loadBobbelTankFile();
+            if (json['Tank'] && json['Tank']['limitsMovement']) {
+                Parameters.flags['limitMovementToTankBounds'] = true;
+            }
+
+            Parameters.loadBobbelTankFile();
             ControlPanel.enable();
         });
     },
@@ -282,8 +371,11 @@ var JSONhandler = {
      * For loading of bobble-file containing entities etc.
      */
     loadBobbelTankFile: function() {
-        JSONhandler.readFile(JSONhandler.bobbeltank_file, function(json){
+        Parameters.readFile(Parameters.bobbeltank_file, function(json){
             Entities.setEntities(json['Entities'], json['Sensors']);
+            if (Parameters.flags['limitMovementToTankBounds']) {
+                Entities.setMovementBounds(0, 0, Tank.width, Tank.height);
+            }
         });
     },
 
@@ -391,6 +483,7 @@ var Log = {
         logEntry.addClass('log-entry');
 
         if (tag) {
+            tag = tag.replace(/\s/g, "");
             logEntry.addClass('logEntryTag_'+tag);
             $(".logEntryTag_"+tag).remove();
         }
@@ -425,6 +518,7 @@ var Log = {
 function Entity(entity_object, sensors_object) {
     this.name = entity_object['name'];
     this.image_src = entity_object['image'];
+    this.movementRestricted = false;
 
     //only sets position if input pos is array with length 2
     var pos = entity_object['position']
@@ -437,11 +531,14 @@ function Entity(entity_object, sensors_object) {
     //transfer definitions of attached sensors into entity (only if definitions exist)
     var perceptionTags = entity_object['perceptions'];
     this.__sensor_perimeters = {};
+    this.__rotated_sensor_perimeters = {};
     this.sensor_colors = {};
     for (var tag_i in perceptionTags) {
         var tag = perceptionTags[tag_i];
         if (sensors_object[tag]){
             this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
+            this.__rotated_sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
+            this.__rotated_sensor_direction = 0;
             this.sensor_colors[tag] = sensors_object[tag]['color'];
         }
     }
@@ -453,26 +550,66 @@ function Entity(entity_object, sensors_object) {
         return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
     }
     this.uuid = s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-
-    var image_src = entity_object['image'];
-    if (image_src) {
-        var img = new Image();
-        var alias = this;
-        img.onload = function(){
-            alias.image_cache = img;
-        }
-        img.src = image_src;
-    }
-}
-
-
-Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
-    angle = angle * Math.PI / 180.0;
-    return [Math.cos(angle) * (pointX-originX) - Math.sin(angle) * (pointY-originY) + originX,
-        Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY]
-
 };
 
+/**
+ * Moves entity along current direction
+ * @param distance
+ */
+Entity.prototype.move = function(distance) {
+    var newPos = Entity.__rotateAroundOrigin(this.posX + distance, this.posY, this.posX, this.posY, this.direction);
+
+    if(this.movementRestricted) {
+        var newPosX = newPos[0];
+        var newPosY = newPos[1];
+
+        this.posX = Math.max(this.restrictedXmin, Math.min(newPosX, this.restrictedXmax));
+        this.posY = Math.max(this.restrictedYmin, Math.min(newPosY, this.restrictedYmax));
+    } else {
+        this.posX = newPos[0];
+        this.posY = newPos[1];
+    }
+
+    this.updateSensors();
+};
+
+/**
+ * Rotates entity depending on degrees (0-360)
+ * @param degrees
+ */
+Entity.prototype.rotate = function(degrees) {
+    this.direction += degrees;
+    while (this.direction>=360) {
+        this.direction -= 360;
+    }
+    while (this.direction < 0) {
+        this.direction += 360;
+    }
+    this.updateSensors();
+};
+
+/**
+ * Restricts movement of entities to these coordinates. (Handled on move method)
+ * @param minX
+ * @param minY
+ * @param maxX
+ * @param maxY
+ */
+Entity.prototype.setMovementBounds = function(minX, minY, maxX, maxY) {
+    this.movementRestricted = true;
+    this.restrictedXmin = Math.round(minX);
+    this.restrictedXmax = Math.round(maxX);
+    this.restrictedYmin = Math.round(minY);
+    this.restrictedYmax = Math.round(maxY);
+};
+
+Entity.prototype.clearMovementBounds = function() {
+    this.movementRestricted = false;
+    this.restrictedXmin = null;
+    this.restrictedXmax = null;
+    this.restrictedYmin = null;
+    this.restrictedYmax = null;
+};
 
 /**
  * Updates entities sensor_polygons etc. according to position and direction properties
@@ -480,15 +617,20 @@ Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
 Entity.prototype.updateSensors = function(){
     var posX = this.posX;
     var posY = this.posY;
-    var direction = this.direction;
+    var direction = this.direction |0;
+    var sensorDirection = this.__rotated_sensor_direction |0;
 
     for (var sensor in this.__sensor_perimeters){
-        this.sensor_polygons[sensor] = this.__sensor_perimeters[sensor].map(function(polyEdge, index){
-            var newPolyEdge = [polyEdge[0]+posX, polyEdge[1]+posY]; //move to point
-            if (direction) {
-                newPolyEdge = Entity.__rotateAroundOrigin(newPolyEdge[0], newPolyEdge[1], posX, posY, direction);
-            }
-            return newPolyEdge;
+
+        if (direction !== sensorDirection) {
+            this.__rotated_sensor_perimeters[sensor] = this.__sensor_perimeters[sensor].map(function(polyEdge, index) {
+                return Entity.__rotateAroundOrigin(polyEdge[0], polyEdge[1], 0, 0, direction);
+            });
+            this.__rotated_sensor_direction = direction;
+        };
+
+        this.sensor_polygons[sensor] = this.__rotated_sensor_perimeters[sensor].map(function(polyEdge, index){
+            return [polyEdge[0]+posX, polyEdge[1]+posY]; //move to point
         });
     }
 };
@@ -506,6 +648,23 @@ Entity.prototype.toString = function(){
 };
 
 /**
+ * STATIC Helper function (not connected to any object directly)
+ * Rotates point around an origin point for amount of degrees
+ * @param pointX x coord for point to rotate
+ * @param pointY y coord for point to rotate
+ * @param originX origin point x
+ * @param originY origin point y
+ * @param angle angle in degrees (0-360)
+ * @returns {*[]} Coords of rotated point [x,y]
+ * @private
+ */
+Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
+    angle = angle * Math.PI / 180.0;
+    return [Math.cos(angle) * (pointX-originX) - Math.sin(angle) * (pointY-originY) + originX,
+        Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY]
+};
+
+/**
  * EntryPoint to core javascript if document loaded
  * Can be seen as "main-method"
  */
@@ -514,7 +673,7 @@ $('document').ready(function(){
     Tank.init();
     Simulator.init();
     ControlPanel.init();
-    JSONhandler.init();
+    Parameters.init();
 
-    JSONhandler.loadConfig();
+    Parameters.loadConfig();
 });

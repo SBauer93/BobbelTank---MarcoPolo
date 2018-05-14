@@ -1,1 +1,6 @@
-{}
+{
+  "Tank" : {
+    "background" : "",
+    "limitsMovement" : true
+  }
+}
