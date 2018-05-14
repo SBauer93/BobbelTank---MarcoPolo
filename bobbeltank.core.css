@@ -52,7 +52,7 @@ canvas {
     width: 20px; /* Set a specific slider handle width */
     height: 20px;
     border-radius: 50%;
-    background: orange; /* Green background */
+    background: royalblue; /* Green background */
     cursor: pointer; /* Cursor on hover */
 }
 
@@ -60,16 +60,17 @@ canvas {
     width: 20px; /* Set a specific slider handle width */
     height: 20px;
     border-radius: 50%;
-    background: orange; /* Green background */
+    background: royalblue; /* Green background */
     cursor: pointer; /* Cursor on hover */
-}
-
-.controlpanel_buttons {
-    margin-bottom: 1em;
 }
 
 .control_btn {
     padding:0.5em;
+}
+
+.controlpanel_checkboxes {
+    font-size: 0.8em;
+    line-height: 1.5em;
 }
 
 .log-entry {

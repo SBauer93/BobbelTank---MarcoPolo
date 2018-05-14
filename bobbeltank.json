@@ -4,10 +4,11 @@
       "name": "Wilson",
       "image": "images/150x150_bubble.png",
       "position" : [1,40],
-      "perceptions" : ["eyes", "feeler"]
+      "perceptions" : ["see", "feel"]
     }, {
       "name": "Malotzki",
       "image": "images/150x150_bubble.png",
+      "color": "cyan",
       "position" : [10,80],
       "perceptions" : ["pirate"],
       "direction" : 20
@@ -15,81 +16,28 @@
       "name": "PEWPEW",
       "image": "images/150x150_bubble.png",
       "position" : [100,20],
-      "perceptions" : ["eyes"],
+      "perceptions" : ["see"],
       "direction" : 50
     }, {
       "name": "Hannah",
       "image": "images/150x150_bubble.png",
+      "color": "pink",
       "position" : [200,375],
-      "perceptions" : ["eyes", "ears", "feeler"],
+      "perceptions" : ["see", "hear", "feel"],
       "direction" : 260
-    }, {
-      "name": "The other guy",
-      "image": "images/150x150_bubble.png",
-      "position" : [190,60],
-      "perceptions" : ["feeler"],
-      "direction" : 100
-    }, {
-      "name": "Malotzki",
-      "image": "images/150x150_bubble.png",
-      "position" : [100,80],
-      "perceptions" : ["pirate"],
-      "direction" : 20
-    }, {
-      "name": "PEWPEW",
-      "image": "images/150x150_bubble.png",
-      "position" : [140,200],
-      "perceptions" : ["eyes"],
-      "direction" : 50
-    }, {
-      "name": "Hannah",
-      "image": "images/150x150_bubble.png",
-      "position" : [230,234],
-      "perceptions" : ["eyes", "ears", "feeler"],
-      "direction" : 260
-    }, {
-      "name": "The other guy",
-      "image": "images/150x150_bubble.png",
-      "position" : [223,44],
-      "perceptions" : ["feeler"],
-      "direction" : 100
-    }, {
-      "name": "Malotzki",
-      "image": "images/150x150_bubble.png",
-      "position" : [332,566],
-      "perceptions" : ["pirate"],
-      "direction" : 20
-    }, {
-      "name": "PEWPEW",
-      "image": "images/150x150_bubble.png",
-      "position" : [33,20],
-      "perceptions" : ["eyes"],
-      "direction" : 50
-    }, {
-      "name": "Hannah",
-      "image": "images/150x150_bubble.png",
-      "position" : [1000,375],
-      "perceptions" : ["eyes", "ears", "feeler"],
-      "direction" : 260
-    }, {
-      "name": "The other guy",
-      "image": "images/150x150_bubble.png",
-      "position" : [1100,60],
-      "perceptions" : ["feeler"],
-      "direction" : 100
     }
   ],
 
   "Sensors": {
-    "eyes": {
+    "see": {
       "perimeter": [[0,0], [40,20], [40,-20]],
       "color" : "#FFDD00"
     },
-    "ears": {
+    "hear": {
       "perimeter": [[-20,20], [20,20], [20,-20], [-20,-20]],
       "color" : "#FFDD00"
     },
-    "feeler": {
+    "feel": {
       "perimeter": [[0,0],[60, 30], [60, 15], [0, 0], [60, -15], [60, -30]],
       "color" : "#FFDD00"
     },

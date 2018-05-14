@@ -1,6 +1,6 @@
 {
   "Tank" : {
-    "background" : "",
+    "background" : "images/milky-way-2695569_960_720",
     "limitsMovement" : true
   }
 }

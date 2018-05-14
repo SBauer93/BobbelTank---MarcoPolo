@@ -7,65 +7,6 @@
  */
 
 /**
- * Handles all Entities in the system
- * @type {{__entities: Array, setEntities: Entities.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
- */
-var Entities = {
-
-    __entities: [],
-
-    setEntities: function(input_entities, sensors){
-        Entities.__entities = [];
-
-        if (input_entities.length) {
-
-            var logMsg = 'Updated entity list to:';
-            for (var i in input_entities) {
-                var entity = new Entity(input_entities[i], sensors);
-                logMsg += '\n' + entity;
-                Entities.__entities.push(entity);
-                Tank.displayEntity(entity, true, true);
-            }
-            Log.debug(logMsg);
-            Tank.flush();
-        } else {
-            Log.debug("Updated entity list to empty list");
-        }
-    },
-
-    setMovementBounds: function(minX, minY, maxX, maxY) {
-        Log.debug('Restricting movement to X:' + minX + '-' + maxX + ' Y:' + minY + '-' + maxY);
-        for (var i in Entities.__entities){
-            Entities.__entities[i].setMovementBounds(minX, minY, maxX, maxY);
-        }
-    },
-
-    clearMovementBounds: function() {
-        Log.debug('Removing movement restrictions of entities');
-        for (var i in Entities.__entities){
-            Entities.__entities[i].clearMovementBounds();
-        }
-    },
-
-    getEntities: function(){
-        return Entities.__entities;
-    },
-
-    getEntityByUUID: function(uuid) {
-        for (var i in Entities.__entities)
-            if (Entities.__entities[i]['uuid'] === uuid)
-                return Entities.__entities[i];
-    },
-
-    getEntityByName: function(name) {
-        for (var i in Entities.__entities)
-            if (Entities.__entities[i]['name'] === name)
-                return Entities.__entities[i];
-    }
-
-};
-
-/**
  * Tank visualization
  * @type {{visible_canvas: null, visible_canvas_ctx: null, width: number, height: number, autoSize: boolean, scratch_canvas: null, scratch_canvas_ctx: null, image_canvas: null, image_canvas_ctx: null, image_cache: {}, init: Tank.init, displayEntity: Tank.displayEntity, displayPerception: Tank.displayPerception, images_loading: number, displayImage: Tank.displayImage, flush_requested: boolean, flush: Tank.flush}}
  */
@@ -82,9 +23,15 @@ var Tank = {
     image_canvas_ctx: null,
     image_cache : {},
 
+    showCoords : true,
+    showImages : true,
+    showColors : true,
+    showPerceptions : true,
+
     enabled: true,
 
     init: function(){
+
         Tank.visible_canvas = $('#bobbeltank')[0];
         if (Tank.autoSize) {
             Tank.width = Math.round($('#tank').width());
@@ -93,15 +40,17 @@ var Tank = {
         Tank.visible_canvas.width = Tank.width;
         Tank.visible_canvas.height = Tank.height;
         Tank.visible_canvas_ctx = Tank.visible_canvas.getContext('2d');
-        Tank.visible_canvas_ctx.transform(1, 0, 0, -1, 0, Tank.height);
+        //Tank.visible_canvas_ctx.transform(1, 0, 0, -1, 0, Tank.height); change this line to reverse Y-Axis
 
-        //setup scratch canvas. This is the canvas to paint on and transfer at the end to real canvas
+        // Setup scratch canvas.
+        // This is the canvas for perception-polygons etc. These are painted automatically flushed to the end to visible canvas
         Tank.scratch_canvas = $('<canvas/>')[0];
         Tank.scratch_canvas.width = Tank.width;
         Tank.scratch_canvas.height = Tank.height;
         Tank.scratch_canvas_ctx = Tank.scratch_canvas.getContext('2d');
 
-        //setup image canvas. This is the canvas to paint on and transfer at the end to real canvas
+        // Setup image and user canvas.
+        // This is the canvas where images and user output are painted on and transferred then to visible canvas
         Tank.image_canvas = $('<canvas/>')[0];
         Tank.image_canvas.width = Tank.width;
         Tank.image_canvas.height = Tank.height;
@@ -117,7 +66,7 @@ var Tank = {
      * @param entity Entity-Object
      * @param withPerception if true perception areas are painted
      */
-    displayEntity: function(entity, withPerception, withImage) {
+    displayEntity: function(entity) {
         if (!Tank.enabled) return;
 
         var posX = entity.posX;
@@ -127,13 +76,17 @@ var Tank = {
             return;
         }
 
-        if (withPerception) {
+        if (Tank.showPerceptions) {
             for (var sensorTag in entity.sensor_polygons){
-                Tank.displayPerception(entity.sensor_polygons[sensorTag], entity.sensor_colors[sensorTag], 1);
+                Tank.displayPerception(entity.sensor_polygons[sensorTag], entity.sensor_colors[sensorTag]);
             }
         }
 
-        if (withImage) {
+        if (Tank.showColors && entity.color){
+            Tank.displayEntityColor(entity.color, posX, posY);
+        }
+
+        if (Tank.showImages) {
             Tank.displayImage(entity.image_src, posX, posY, 20, 20);
         }
     },
@@ -144,12 +97,12 @@ var Tank = {
      * @param color polygon color
      * @param intensity polygon opacity (1 is full)
      */
-    displayPerception: function(sensorPolygon, color, intensity){
+    displayPerception: function(sensorPolygon, color){
         if (!Tank.enabled) return;
 
         var ctx = Tank.scratch_canvas_ctx;
+        ctx.beginPath();
         ctx.fillStyle = color;
-        if (intensity) ctx.globalAlpha=intensity;
 
         if (!sensorPolygon.length) {
             Log.error('Can not paint invalid sensorPolygon');
@@ -160,10 +113,26 @@ var Tank = {
         for (var i in sensorPolygon){
             ctx.lineTo(sensorPolygon[i][0],sensorPolygon[i][1]);
         }
-        ctx.closePath();
         ctx.fill();
+        ctx.closePath();
 
-        if (intensity) ctx.globalAlpha=1;
+    },
+
+    /**
+     * Displays color of an entity, defined as "color"-Property
+     * @param color
+     * @param posX
+     * @param posY
+     * @param radius (optional) increase or reduce radius of circle
+     */
+    displayEntityColor: function(color, posX, posY, radius) {
+        var ctx = Tank.image_canvas_ctx;
+        ctx.beginPath();
+        ctx.arc(posX, posY, radius|10, 0, 2*Math.PI, false);
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.closePath();
     },
 
     images_loading: 0,
@@ -196,6 +165,23 @@ var Tank = {
         }
     },
 
+    /**
+     * Displays coords on canvas
+     * @param ctx
+     */
+    displayCoords : function(ctx){
+        if (Tank.showCoords) {
+            ctx.font = "15px Arial";
+            ctx.fillStyle = "white";
+            ctx.textAlign = "left";
+            ctx.fillText("X0, Y0", 10, 20);
+            ctx.fillText("X0, Y" + Tank.height, 10, Tank.height-15);
+            ctx.textAlign = "right";
+            ctx.fillText("X"+ Tank.width +", Y0", Tank.width-10, 20);
+            ctx.fillText("X"+ Tank.width +", Y"+ Tank.height, Tank.width-10, Tank.height-15);
+        }
+    },
+
     flush_requested: false,
     /**
      * A flush (transver of image from scretch to visible canvas only can be performed if no images are loading
@@ -203,13 +189,18 @@ var Tank = {
      * flush_requested is a flag to check wheather there is an outstanding flush request
      */
     flush: function(){
-        if (!Tank.enabled) return;
+        if (!Tank.enabled
+            || (!Tank.showCoords && !Tank.showImages && !Tank.showColors && !Tank.showPerceptions))
+            return;
 
         Tank.flush_requested = true;
         if (!Tank.images_loading) {
             Tank.visible_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
             Tank.visible_canvas_ctx.beginPath();
+            Tank.visible_canvas_ctx.globalAlpha = 0.8;
             Tank.visible_canvas_ctx.drawImage(Tank.scratch_canvas, 0, 0);
+            Tank.visible_canvas_ctx.globalAlpha = 1;
+            Tank.displayCoords(Tank.visible_canvas_ctx);
             Tank.scratch_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
             Tank.scratch_canvas_ctx.beginPath();
             Tank.visible_canvas_ctx.drawImage(Tank.image_canvas, 0, 0);
@@ -219,13 +210,18 @@ var Tank = {
         }
     },
 
-    toggleEnabled: function() {
-        Tank.enabled = !Tank.enabled;
-        if (Tank.enabled) {
-            Log.info("Visualization ON", 100, 'tank_enabled_state');
-        } else {
-            Log.info("Visualization OFF", 100, 'tank_enabled_state');
-        }
+    /**
+     * Sets tank background to path
+     * @param path
+     */
+    setBackground: function(path) {
+        $('#tank')
+            .css("background", "url("+path+") no-repeat center center")
+            .css("-webkit-background-size", "cover")
+            .css("-moz-background-size", "cover")
+            .css("-o-background-size", "cover")
+            .css("background-size","cover");
+        Log.debug("Changed tank's background to " + path);
     }
 };
 
@@ -264,25 +260,50 @@ var Simulator = {
     },
 
     /**
-     * Performs a single simulation step
+     * ********************
+     * *********************
+     * Performs a single simulation step and calls user function
+     * *********************
+     * ********************
      */
     performStep: function(){
         var begin = new Date();
-        //perform step here
 
-        var entities = Entities.getEntities();
+        var entityPositions = Entities.getPositions(); //position of all entities as [[pos1X, pos1Y],[pos2X, pos2Y],...]
+        var entities = Entities.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
 
-        for (var i in entities){
-            var entity = entities[i];
+        //prepares simulation step for every single entity...
+        for (var entity_i in entities){
+            var entity = entities[entity_i];
+            var perceptions = {};
 
-            if (Math.random() > 0.5) {
-                entity.rotate(10);
-            } else {
-                entity.rotate(-10);
+            //checks if entities sensors see some other entity ...
+            for (var sensorTag in entity.polyk_sensor_polygon){
+                var sensorPolygon = entity.polyk_sensor_polygon[sensorTag];
+                for (var pos_i in entityPositions) {
+                    if (pos_i ===entity_i) continue; //skip self
+
+                    var position = entityPositions[pos_i];
+                    if (PolyK.ContainsPoint(sensorPolygon, position[0], position[1])){
+                        var perceivedEntity = Entities.getEntityByIndex(pos_i);
+
+                        if (!perceptions[sensorTag]){
+                            perceptions[sensorTag] = {};
+                        }
+                        perceptions[sensorTag][perceivedEntity.name] = {
+                            'uuid': perceivedEntity.uuid,
+                            'posX': perceivedEntity.posX,
+                            'posY': perceivedEntity.posY,
+                        }
+                    }
+                }
             }
-            entity.move(1);
 
-            Tank.displayEntity(entity, true, true);
+            if (Object.keys(perceptions).length)
+            Log.debug(entity.name + " perceived:\n" + JSON.stringify(perceptions, null, 2), 1, entity.name);
+
+            simulationStep(entity, perceptions, Tank.image_canvas); // calls user simulation here!
+            Tank.displayEntity(entity);
         }
         Tank.flush();
 
@@ -317,10 +338,24 @@ var ControlPanel = {
         $('#restart_btn').click(function(){
             Simulator.stop();
             Parameters.loadConfig();
+            Simulator.__step_count = 0;
         });
 
-        $('#noOutput_btn').click(function(){
-            Tank.toggleEnabled();
+        $('#disableAllCheck').change(function(){
+            Tank.enabled = !$(this).is(":checked");
+        });
+
+        $('#displayCoordsCheck').change(function(){
+            Tank.showCoords = $(this).is(":checked");
+        });
+        $('#displayColorsCheck').change(function(){
+            Tank.showColors = $(this).is(":checked");
+        });
+        $('#displayImagesCheck').change(function(){
+            Tank.showImages = $(this).is(":checked");
+        });
+        $('#displayPerceptionsCheck').change(function(){
+            Tank.showPerceptions = $(this).is(":checked");
         });
 
         ControlPanel.disable();
@@ -360,6 +395,9 @@ var Parameters = {
 
             if (json['Tank'] && json['Tank']['limitsMovement']) {
                 Parameters.flags['limitMovementToTankBounds'] = true;
+            }
+            if (json['Tank'] && json['Tank']['background']) {
+                Tank.setBackground(json['Tank']['background']);
             }
 
             Parameters.loadBobbelTankFile();
@@ -500,6 +538,94 @@ var Log = {
     }
 };
 
+/**
+ * Handles all Entities in the system
+ * @type {{__entities: Array, setEntities: Entities.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
+ */
+var Entities = {
+
+    __entities: [],
+
+    setEntities: function(input_entities, sensors){
+        Entities.__entities = [];
+
+        if (input_entities.length) {
+
+            var logMsg = 'Updated entity list to:';
+            for (var i in input_entities) {
+                var entity = new Entity(input_entities[i], sensors);
+                logMsg += '\n' + entity;
+                Entities.__entities.push(entity);
+                Tank.displayEntity(entity);
+            }
+            Log.debug(logMsg);
+            Tank.flush();
+        } else {
+            Log.debug("Updated entity list to empty list");
+        }
+    },
+
+    setMovementBounds: function(minX, minY, maxX, maxY) {
+        Log.debug('Restricting movement to X:' + minX + '-' + maxX + ' Y:' + minY + '-' + maxY);
+        for (var i in Entities.__entities){
+            Entities.__entities[i].setMovementBounds(minX, minY, maxX, maxY);
+        }
+    },
+
+    clearMovementBounds: function() {
+        Log.debug('Removing movement restrictions of entities');
+        for (var i in Entities.__entities){
+            Entities.__entities[i].clearMovementBounds();
+        }
+    },
+
+    getEntities: function(){
+        return Entities.__entities;
+    },
+
+    getPositions: function() {
+        var positions = [];
+        for (var i in Entities.__entities) {
+            positions.push([Entities.__entities[i]['posX'], Entities.__entities[i]['posY']]);
+        }
+        return positions;
+    },
+
+    getEntityByIndex: function(index){
+        return Entities.__entities[index];
+    },
+
+    getEntityByUUID: function(uuid) {
+        for (var i in Entities.__entities)
+            if (Entities.__entities[i]['uuid'] === uuid)
+                return Entities.__entities[i];
+    },
+
+    getEntityByName: function(name) {
+        for (var i in Entities.__entities)
+            if (Entities.__entities[i]['name'] === name)
+                return Entities.__entities[i];
+    },
+
+    /**
+     * Returns name of entity with index
+     * @param index
+     * @returns {*}
+     */
+    getNameByIndex: function(index) {
+        return Entities.__entities[index]['name'];
+    },
+
+    /**
+     * Returns uuid of entity with index
+     * @param index
+     * @returns {*}
+     */
+    getUUIDByIndex: function(index) {
+        return Entities.__entities[index]['uuid'];
+    }
+
+};
 
 /**
  * ------------------------------
@@ -519,6 +645,7 @@ function Entity(entity_object, sensors_object) {
     this.name = entity_object['name'];
     this.image_src = entity_object['image'];
     this.movementRestricted = false;
+    this.color = entity_object['color'];
 
     //only sets position if input pos is array with length 2
     var pos = entity_object['position']
@@ -543,6 +670,7 @@ function Entity(entity_object, sensors_object) {
         }
     }
     this.sensor_polygons = {};
+    this.polyk_sensor_polygon = {};
     this.updateSensors();
 
     //set unique ID
@@ -629,9 +757,18 @@ Entity.prototype.updateSensors = function(){
             this.__rotated_sensor_direction = direction;
         };
 
-        this.sensor_polygons[sensor] = this.__rotated_sensor_perimeters[sensor].map(function(polyEdge, index){
+        var sensorPolygon = this.__rotated_sensor_perimeters[sensor].map(function(polyEdge, index){
             return [polyEdge[0]+posX, polyEdge[1]+posY]; //move to point
         });
+
+        this.sensor_polygons[sensor] = sensorPolygon;
+
+        var polyk_sensorPolygon = []; //stupid library requires another format
+        for (var pos_i in sensorPolygon) {
+            polyk_sensorPolygon.push(sensorPolygon[pos_i][0]);
+            polyk_sensorPolygon.push(sensorPolygon[pos_i][1]);
+        }
+        this.polyk_sensor_polygon[sensor] = polyk_sensorPolygon;
     }
 };
 
@@ -642,6 +779,7 @@ Entity.prototype.updateSensors = function(){
 Entity.prototype.toString = function(){
     return ' > "'
         + (this.name? this.name: '"name"-property missing!')
+        + (this.color? ' ('+this.color+')': '')
         + (this.posX && this.posY? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.posX +', ' + this.posY + ']')
         + (this.image_src? '': ' without "image" property!')
         + (Object.keys(this.__sensor_perimeters).length? ' with ['+Object.keys(this.__sensor_perimeters)+']': ' without any "perceptions" defined!');
