@@ -28,3 +28,8 @@ For you mostly relevant are:
 2. **bobbeltank.js** This file contains functions that are called by the simulation process. Relevant information are provided as parameters. You can add your own functionality into these function-bodies. [bobbeltank.js documentation](doc/bobbeltank.md)
 
 If you want to use additonal core functionality like painting things, change html layout etc. you can use (and if necessary rewrite) the core-files. [bobbeltank.core.js documentation](doc/bobbeltank.core.md)
+
+Two hints:
+
+1. This project uses [live.js](http://livejs.com). If you use a web-server such as *mamp* to host this project and deactivate our browser cache (mostly somewhere in debug mode). Page refreshes automatically if you change something
+2. This project uses [PolyK](http://polyk.ivank.net). And the Entities provide their sensor polygons also automatically as polyk sensor polygons. If you do polygon calculations, you can use this library.
