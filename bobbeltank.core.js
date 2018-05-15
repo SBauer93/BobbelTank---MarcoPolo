@@ -821,8 +821,8 @@ Entity.prototype.clearMovementBounds = function() {
 Entity.prototype.updateSensors = function(){
 
     if (this.movementRestricted){
-        this.posX = Math.max(this.restrictedXmin, Math.min(newPosX, this.restrictedXmax));
-        this.posY = Math.max(this.restrictedYmin, Math.min(newPosY, this.restrictedYmax));
+        this.posX = Math.max(this.restrictedXmin, Math.min(this.posX, this.restrictedXmax));
+        this.posY = Math.max(this.restrictedYmin, Math.min(this.posY, this.restrictedYmax));
     }
 
     var posX = this.posX;
