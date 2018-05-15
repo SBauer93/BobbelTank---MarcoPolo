@@ -27,10 +27,12 @@ var Tank = {
     showImages : true,
     showColors : true,
     showPerceptions : true,
-
     enabled: true,
 
     init: function(){
+
+        if (simulator_parameters['tank'] && simulator_parameters['tank']['background_image'])
+            Tank.setBackground(simulator_parameters['tank']['background_image']);
 
         Tank.visible_canvas = $('#bobbeltank')[0];
         if (Tank.autoSize) {
@@ -267,49 +269,65 @@ var Simulator = {
      * ********************
      */
     performStep: function(){
+
+
         var begin = new Date();
+        var entities = EntityCollection.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
 
-        var entityPositions = Entities.getPositions(); //position of all entities as [[pos1X, pos1Y],[pos2X, pos2Y],...]
-        var entities = Entities.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
+        perform_simulation_step_initialization(entities, Simulator.__step_count);
 
-        //prepares simulation step for every single entity...
+        // simulation step for every single entity...
         for (var entity_i in entities){
             var entity = entities[entity_i];
-            var perceptions = {};
 
-            //checks if entities sensors see some other entity ...
-            for (var sensorTag in entity.polyk_sensor_polygon){
-                var sensorPolygon = entity.polyk_sensor_polygon[sensorTag];
-                for (var pos_i in entityPositions) {
-                    if (pos_i ===entity_i) continue; //skip self
+            var perceptions = Simulator.getPerceptions(
+                [entity.posX, entity.posY],
+                EntityCollection.getPositions(),
+                entity.polyk_sensor_polygon);
 
-                    var position = entityPositions[pos_i];
-                    if (PolyK.ContainsPoint(sensorPolygon, position[0], position[1])){
-                        var perceivedEntity = Entities.getEntityByIndex(pos_i);
+            perform_simulation_step_on_entity(entity, perceptions, Simulator.__step_count);
 
-                        if (!perceptions[sensorTag]){
-                            perceptions[sensorTag] = {};
-                        }
-                        perceptions[sensorTag][perceivedEntity.name] = {
-                            'uuid': perceivedEntity.uuid,
-                            'posX': perceivedEntity.posX,
-                            'posY': perceivedEntity.posY,
-                        }
-                    }
-                }
-            }
-
-            if (Object.keys(perceptions).length)
-            Log.debug(entity.name + " perceived:\n" + JSON.stringify(perceptions, null, 2), 1, entity.name);
-
-            simulationStep(entity, perceptions, Tank.image_canvas); // calls user simulation here!
             Tank.displayEntity(entity);
         }
-        Tank.flush();
 
         var end = new Date();
-        Log.debug('Performing simulation step ' + Simulator.__step_count + ' for ' + (end.getTime() - begin.getTime()) + 'ms', 1, "simulator_performing_step");
+        perform_simulation_step_finalization(entities, Simulator.__step_count, end.getTime() - begin.getTime());
+
+        Tank.flush();
         Simulator.__step_count++;
+    },
+
+    /**
+     * Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
+     * @param own_pos position of Entity-Object itself. (Would perceive itself otherwise)
+     * @param perceivable_positions list of positions of perceivable points
+     * @param polyk_polygons_object sensor polygon in polyk format provided by Entity
+     * @returns {null} perceived object or null if empty
+     */
+    getPerceptions: function(own_pos, perceivable_positions, polyk_polygons_object) {
+        var perceptions = {};
+        for (var sensor_tag in polyk_polygons_object){
+            var polyk_polygon = polyk_polygons_object[sensor_tag];
+            for (var pos_i in perceivable_positions) {
+                var position = perceivable_positions[pos_i];
+                if (position[0] === own_pos[0] && position[1] === own_pos[1])
+                    continue; //skip self
+
+                if (PolyK.ContainsPoint(polyk_polygon, position[0], position[1])){
+                    var perceivedEntity = EntityCollection.getEntityByIndex(pos_i);
+                    if (!perceptions[sensor_tag]){
+                        perceptions[sensor_tag] = [];
+                    }
+                    perceptions[sensor_tag].push(perceivedEntity);
+                }
+            }
+        }
+
+        if (Object.keys(perceptions).length) {
+            return perceptions;
+        } else {
+            return null;
+        }
     }
 };
 
@@ -337,8 +355,8 @@ var ControlPanel = {
 
         $('#restart_btn').click(function(){
             Simulator.stop();
-            Parameters.loadConfig();
             Simulator.__step_count = 0;
+            load_bobbel_data();
         });
 
         $('#disableAllCheck').change(function(){
@@ -370,77 +388,6 @@ var ControlPanel = {
     }
 };
 
-/**
- * Handles JSON-Files reading
- * Make sure config_file and bobbeltank_file exist and if empty at least contain these brackets {}
- * @type {{init: Parameters.init, readFile: Parameters.readFile}}
- */
-var Parameters = {
-
-    config_file: 'json/config.json',
-    bobbeltank_file: 'bobbeltank.json',
-
-    flags: {},
-
-    init: function(){
-        Log.debug("JSON handler ready");
-    },
-
-    /**
-     * For loading of configuration file
-     */
-    loadConfig: function() {
-        Parameters.readFile(Parameters.config_file, function(json){
-            /* do something with config here */
-
-            if (json['Tank'] && json['Tank']['limitsMovement']) {
-                Parameters.flags['limitMovementToTankBounds'] = true;
-            }
-            if (json['Tank'] && json['Tank']['background']) {
-                Tank.setBackground(json['Tank']['background']);
-            }
-
-            Parameters.loadBobbelTankFile();
-            ControlPanel.enable();
-        });
-    },
-
-    /**
-     * For loading of bobble-file containing entities etc.
-     */
-    loadBobbelTankFile: function() {
-        Parameters.readFile(Parameters.bobbeltank_file, function(json){
-            Entities.setEntities(json['Entities'], json['Sensors']);
-            if (Parameters.flags['limitMovementToTankBounds']) {
-                Entities.setMovementBounds(0, 0, Tank.width, Tank.height);
-            }
-        });
-    },
-
-    /**
-     * Loads JSON file from json-folder
-     * @param filename name of file. should include extension
-     * @param callback function called after asynchronous read. Json is provided as parameter
-     */
-    readFile: function(filename, callback) {
-        $.getJSON(filename+'?antiCache='+Math.random())
-            .done(function (json) {
-                Log.info('Reading ' + filename);
-                if (callback) callback(json);
-            }).fail(function (error) {
-                if (error && error.responseText) {
-                    Log.debug("(Read failed but using fallback)");
-                    var json = JSON.parse(error.responseText);
-                    if (callback) callback(json);
-                } else {
-                    Log.error('Can not read ' + filename + '\n' +
-                        'The path is not correct or browser prevents reading local files\n' +
-                        'If this error occurs with correct path please use a http server');
-                    return;
-                }
-            });
-    }
-};
 
 /**
  * Logging object. Provides logging output in web app.
@@ -540,14 +487,14 @@ var Log = {
 
 /**
  * Handles all Entities in the system
- * @type {{__entities: Array, setEntities: Entities.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
+ * @type {{__entities: Array, setEntities: EntityCollection.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
  */
-var Entities = {
+var EntityCollection = {
 
     __entities: [],
 
     setEntities: function(input_entities, sensors){
-        Entities.__entities = [];
+        EntityCollection.__entities = [];
 
         if (input_entities.length) {
 
@@ -555,7 +502,7 @@ var Entities = {
             for (var i in input_entities) {
                 var entity = new Entity(input_entities[i], sensors);
                 logMsg += '\n' + entity;
-                Entities.__entities.push(entity);
+                EntityCollection.__entities.push(entity);
                 Tank.displayEntity(entity);
             }
             Log.debug(logMsg);
@@ -563,48 +510,51 @@ var Entities = {
         } else {
             Log.debug("Updated entity list to empty list");
         }
+
+        if (simulator_parameters['entities'] && simulator_parameters['entities']['limit_movement_to_tank_boundaries'])
+            EntityCollection.setMovementBounds(0, 0, Tank.width, Tank.height);
     },
 
     setMovementBounds: function(minX, minY, maxX, maxY) {
         Log.debug('Restricting movement to X:' + minX + '-' + maxX + ' Y:' + minY + '-' + maxY);
-        for (var i in Entities.__entities){
-            Entities.__entities[i].setMovementBounds(minX, minY, maxX, maxY);
+        for (var i in EntityCollection.__entities){
+            EntityCollection.__entities[i].setMovementBounds(minX, minY, maxX, maxY);
         }
     },
 
     clearMovementBounds: function() {
         Log.debug('Removing movement restrictions of entities');
-        for (var i in Entities.__entities){
-            Entities.__entities[i].clearMovementBounds();
+        for (var i in EntityCollection.__entities){
+            EntityCollection.__entities[i].clearMovementBounds();
         }
     },
 
     getEntities: function(){
-        return Entities.__entities;
+        return EntityCollection.__entities;
     },
 
     getPositions: function() {
         var positions = [];
-        for (var i in Entities.__entities) {
-            positions.push([Entities.__entities[i]['posX'], Entities.__entities[i]['posY']]);
+        for (var i in EntityCollection.__entities) {
+            positions.push([EntityCollection.__entities[i]['posX'], EntityCollection.__entities[i]['posY']]);
         }
         return positions;
     },
 
     getEntityByIndex: function(index){
-        return Entities.__entities[index];
+        return EntityCollection.__entities[index];
     },
 
     getEntityByUUID: function(uuid) {
-        for (var i in Entities.__entities)
-            if (Entities.__entities[i]['uuid'] === uuid)
-                return Entities.__entities[i];
+        for (var i in EntityCollection.__entities)
+            if (EntityCollection.__entities[i]['uuid'] === uuid)
+                return EntityCollection.__entities[i];
     },
 
     getEntityByName: function(name) {
-        for (var i in Entities.__entities)
-            if (Entities.__entities[i]['name'] === name)
-                return Entities.__entities[i];
+        for (var i in EntityCollection.__entities)
+            if (EntityCollection.__entities[i]['name'] === name)
+                return EntityCollection.__entities[i];
     },
 
     /**
@@ -613,7 +563,7 @@ var Entities = {
      * @returns {*}
      */
     getNameByIndex: function(index) {
-        return Entities.__entities[index]['name'];
+        return EntityCollection.__entities[index]['name'];
     },
 
     /**
@@ -622,7 +572,7 @@ var Entities = {
      * @returns {*}
      */
     getUUIDByIndex: function(index) {
-        return Entities.__entities[index]['uuid'];
+        return EntityCollection.__entities[index]['uuid'];
     }
 
 };
@@ -635,7 +585,6 @@ var Entities = {
 
 /**
  * Entity Class description. Use var foo = new Entity(entity_object, sensors_object)
- * Parameters entity_object a single entity and the sensors description as described in bobbeltank.json
  * (To reference the entity use the unique ID instead of the name)
  * Entities properties are: name, image_src, position, uuid and sensor_polygons.
  * @param entity_object is an single entity object from config with keys name, image, position etc..
@@ -811,7 +760,6 @@ $('document').ready(function(){
     Tank.init();
     Simulator.init();
     ControlPanel.init();
-    Parameters.init();
 
-    Parameters.loadConfig();
+    load_bobbel_data();
 });
