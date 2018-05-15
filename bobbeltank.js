@@ -30,9 +30,8 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
 
 /**
  * Called during Simulation step for every entity in Simulation
- * @param entity reference to current entity object
  *
- *        Entity's states are contained in it's properties. You can read and persistently chang properties during simulation
+ * Entity's states are contained in it's properties. You can read and persistently chang properties during simulation
  *        (example use: entity.name)
  *
  *          {
@@ -62,12 +61,17 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
  *          entity.updateSensors()      // if you change posX, posY or direction yourself this updates sensorpolygons for you
  *          entity.toString()           // overrides default string output method providing some debug info if necessary
  *
- * @param perceptions object mapping sensornames to lists of perceived entities or null if empty
+ *
+ *
+ * Perceptions-Object looks like this
+ *
  *          {
  *              sensortag_1: [perceived_entity_object_1, perceived_entity_object_2, perceived_entity_object_3, ...],
  *              sensortag_2: ...
  *          }
  *
+ * @param entity reference to current entity object
+ * @param perceptions object mapping sensornames to lists of perceived entities or null if empty*
  * @param step_count number of simulation step
  */
 var perform_simulation_step_on_entity = function(entity, perceptions, step_count){

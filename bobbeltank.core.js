@@ -16,6 +16,7 @@
  *                  Its content is transfered to visible_canvas on Tank.flush() as top layer
  *
  * @type {{visible_canvas: null, visible_canvas_ctx: null, width: number, height: number, autoSize: boolean, scratch_canvas: null, scratch_canvas_ctx: null, image_canvas: null, image_canvas_ctx: null, image_cache: {}, init: Tank.init, displayEntity: Tank.displayEntity, displayPerception: Tank.displayPerception, images_loading: number, displayImage: Tank.displayImage, flush_requested: boolean, flush: Tank.flush}}
+ * @namespace
  */
 var Tank = {
 
@@ -258,6 +259,7 @@ var Tank = {
 /**
  * Simulator is the runner component. It handles action invervalls, start, stop and performs simulation steps
  * @type {{__interval_ref: null, __interval_ms: number, __step_count: number, init: Simulator.init, setInterval: Simulator.setInterval, stop: Simulator.stop, performStep: Simulator.performStep, getPerceivedEntities: Simulator.getPerceptions}}
+ * @namespace
  */
 var Simulator = {
 
@@ -325,8 +327,9 @@ var Simulator = {
 };
 
 /**
- * Handles user interactions with web components in control panel
- * @type {{init: ControlPanel.init}}
+ * Handles user input with web controls
+ * @type {{init: ControlPanel.init, setVisDisabled: ControlPanel.setVisDisabled}}
+ * @namespace
  */
 var ControlPanel = {
 
@@ -370,6 +373,10 @@ var ControlPanel = {
         });
     },
 
+    /**
+     * Sets user controls to disabled visualisation
+     * @param disabled
+     */
     setVisDisabled: function(disabled){
         $('#disableAllCheck').prop('checked', disabled);
         $('#displayCoordsCheck').prop('checked', !disabled);
@@ -383,6 +390,7 @@ var ControlPanel = {
 /**
  * Logging object. Provides logging output in web app.
  * @type {{hide_debug: boolean, oldLog: null, init: Log.init, info: Log.info, debug: Log.debug, error: Log.error, __addEntry: Log.__addEntry}}
+ * @namespace
  */
 var Log = {
 
@@ -513,6 +521,7 @@ var Log = {
 /**
  * Handles all Entities in the system. Some kind of entity database where the bobbels live
  * @type {{__entities: Array, setEntities: EntityCollection.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
+ * @namespace
  */
 var EntityCollection = {
 
@@ -612,8 +621,16 @@ var EntityCollection = {
 
     /**
      * Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
+     *
+     * polyk_polygons_object
+     *      {
+     *          sensorname_1: [polyk_coords],
+     *          sensorname_2: [polyk_coords],
+     *          sensorname_n: [polyk_coords]
+     *      }
+     *
      * @param own_pos position of Entity-Object itself. (Would perceive itself otherwise)
-     * @param polyk_polygons_object sensor polygon in polyk format provided by Entity {sensorname_1: [polyk_coords], sensorname_2: [polyk_coords], ...}
+     * @param polyk_polygons_object sensor polygon in polyk format provided by Entity
      * @param perceivable_positions list of positions that can be perceived if inside sensor polygon
      * @returns {null} perceived object {sensorname_1: [list_of_perceived_entities],sensorname_2: [list_of_perceived_entities],..} or null if empty
      */
@@ -673,6 +690,7 @@ var EntityCollection = {
  */
 
 /**
+ /**
  * Entity Class description. Use var foo = new Entity(entity_object, sensors_object)
  * (To reference the entity use the unique ID instead of the name)
  * Entities properties are:
@@ -696,7 +714,8 @@ var EntityCollection = {
  *                                      See (http://polyk.ivank.net/?p=documentation) for documentation
  *
  * @param entity_object is an single entity object from properties.js with keys name, image, position etc..
- * @constructor adds fields
+ * @param sensors_object
+ * @constructor
  */
 function Entity(entity_object, sensors_object) {
     this.name = entity_object['name'];
@@ -857,7 +876,7 @@ Entity.prototype.toString = function(){
  * @param originX origin point x
  * @param originY origin point y
  * @param angle angle in degrees (0-360)
- * @returns {*[]} Coords of rotated point [x,y]
+ * @returns Coords of rotated point
  * @private
  */
 Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
