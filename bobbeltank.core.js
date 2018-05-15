@@ -7,21 +7,28 @@
  */
 
 /**
- * Tank visualization
+ * Tank is the visualisation component of the simulator.
+ *
+ * Tank provides different canvas elements.
+ *  visible_canvas  is visible canvas. Should not be used directly. It is updated on Tank.flush() with content of scratch_canvas and image_canvas
+ *  scratch_canvas  is a non visible canvas element. Is used during single paint processes. Its content is transfered to visible_canvas on Tank.flush()
+ *  image_canvas    is a non visible canvas element. Is used during single paint operations by user and image loading processes.
+ *                  Its content is transfered to visible_canvas on Tank.flush() as top layer
+ *
  * @type {{visible_canvas: null, visible_canvas_ctx: null, width: number, height: number, autoSize: boolean, scratch_canvas: null, scratch_canvas_ctx: null, image_canvas: null, image_canvas_ctx: null, image_cache: {}, init: Tank.init, displayEntity: Tank.displayEntity, displayPerception: Tank.displayPerception, images_loading: number, displayImage: Tank.displayImage, flush_requested: boolean, flush: Tank.flush}}
  */
 var Tank = {
 
     visible_canvas: null,
     visible_canvas_ctx : null,
-    width: 1000,
-    height: 750,
-    autoSize: true,
     scratch_canvas: null,
     scratch_canvas_ctx: null,
     image_canvas: null,
     image_canvas_ctx: null,
     image_cache : {},
+
+    width: 1000,
+    height: 750,
 
     showCoords : true,
     showImages : true,
@@ -29,16 +36,31 @@ var Tank = {
     showPerceptions : true,
     enabled: true,
 
+    /**
+     * Called on page ready. Initializes Tank's properties and canvas objects
+     */
     init: function(){
 
-        if (simulator_parameters['tank'] && simulator_parameters['tank']['background_image'])
-            Tank.setBackground(simulator_parameters['tank']['background_image']);
+        if (simulator_parameters['tank']){
+            if (simulator_parameters['tank']['background_image'])
+                Tank.setBackground(simulator_parameters['tank']['background_image']);
+            if (simulator_parameters['tank']['width'])
+                Tank.width = simulator_parameters['tank']['width'];
+            if (simulator_parameters['tank']['height'])
+                Tank.height = simulator_parameters['tank']['height'];
+            if (simulator_parameters['tank']['auto_size']){
+                Tank.width = Math.round($('#tank').width());
+                Tank.height = Math.round($('#tank').height());
+                Log.debug('Tank sized automatically');
+            }
+            if (simulator_parameters['tank']['disable']){
+                Tank.enabled = false;
+                ControlPanel.setVisDisabled(true);
+                Log.info('Tank disabled in properties.js!');
+            }
+        };
 
         Tank.visible_canvas = $('#bobbeltank')[0];
-        if (Tank.autoSize) {
-            Tank.width = Math.round($('#tank').width());
-            Tank.height = Math.round($('#tank').height());
-        }
         Tank.visible_canvas.width = Tank.width;
         Tank.visible_canvas.height = Tank.height;
         Tank.visible_canvas_ctx = Tank.visible_canvas.getContext('2d');
@@ -59,22 +81,20 @@ var Tank = {
         Tank.image_canvas_ctx = Tank.image_canvas.getContext('2d');
 
         Log.debug('Tank of size ' + Tank.visible_canvas.width + 'x' + Tank.visible_canvas.height + ' ready');
-        if (Tank.autoSize) Log.debug('Tank sized automatically');
     },
 
     /**
-     * Paints an Entity-Object to canvas
-     *
-     * @param entity Entity-Object
-     * @param withPerception if true perception areas are painted
+     * Prints a complete entity with perceptions, color and image to canvas (if not prevented by Tank.show... properties)
+     * Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
+     * @param entity an entity object
      */
     displayEntity: function(entity) {
         if (!Tank.enabled) return;
 
         var posX = entity.posX;
         var posY = entity.posY;
-        if (posX === null || posY === null) {
-            Log.error("Position information incomplete on entity\n" + entity);
+        if (posX === undefined || posY === undefined) {
+            Log.debug("Skipping displaying incomplete entity\n" + entity, 30, entity.name);
             return;
         }
 
@@ -94,10 +114,10 @@ var Tank = {
     },
 
     /**
-     * Displays sensorPolygon
-     * @param sensorPolygon polygon coordinates
-     * @param color polygon color
-     * @param intensity polygon opacity (1 is full)
+     * Prints a sensor- (or normal) Polygon to canvas (if not prevented by Tank.show... properties)
+     * Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
+     * @param sensorPolygon Polygon list of points [[x,y], [x,y], [x,y], ... ]
+     * @param color fill color
      */
     displayPerception: function(sensorPolygon, color){
         if (!Tank.enabled) return;
@@ -121,11 +141,12 @@ var Tank = {
     },
 
     /**
-     * Displays color of an entity, defined as "color"-Property
-     * @param color
-     * @param posX
-     * @param posY
-     * @param radius (optional) increase or reduce radius of circle
+     * Prints a colored circle (used to highlight entities) at given position to canvas (if not prevented by Tank.show... properties)
+     * Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
+     * @param color colorcode
+     * @param posX x-pos
+     * @param posY y-pos
+     * @param radius radius of circle in px
      */
     displayEntityColor: function(color, posX, posY, radius) {
         var ctx = Tank.image_canvas_ctx;
@@ -139,7 +160,9 @@ var Tank = {
 
     images_loading: 0,
     /**
-     * Adds image with specified source path to scretch canvas and performs flush after loading if requested
+     * Adds image with specified source path to image_canvas.
+     * For better performance image data is cached in Tank.image_cache
+     * If images are loading (can happen delayed) the Tank.flush() is redirected to finished image loading
      * @param source path to image
      * @param posX position of image
      * @param posY position of image
@@ -168,11 +191,12 @@ var Tank = {
     },
 
     /**
-     * Displays coords on canvas
-     * @param ctx
+     * Displays coords on visible canvas corners.
+     * Is called during Tank.flush automatically during cleanup if not prevented by Tank.show.. properties
      */
-    displayCoords : function(ctx){
+    displayCoords : function(){
         if (Tank.showCoords) {
+            var ctx = Tank.visible_canvas_ctx;
             ctx.font = "15px Arial";
             ctx.fillStyle = "white";
             ctx.textAlign = "left";
@@ -186,9 +210,13 @@ var Tank = {
 
     flush_requested: false,
     /**
-     * A flush (transver of image from scretch to visible canvas only can be performed if no images are loading
-     * If images_loading > 0 transfered image would be incomplete
-     * flush_requested is a flag to check wheather there is an outstanding flush request
+     * A flush performs following tasks (can be delayed if still images are loading)
+     * Cleans visible canvas
+     * Transfers content from image- and scretch- canvas to visible canvas
+     * Cleans image- and scratch- canvas to be ready for new content
+     *
+     * !Important make sure you request flush() only if you are done painting on scratch- and image-canvas (ex. end of complete simulation step)
+     * All content beeing on visible canvas will be removed before flush. All content on scratch- and image-canvas will be removed after flush
      */
     flush: function(){
         if (!Tank.enabled
@@ -202,7 +230,7 @@ var Tank = {
             Tank.visible_canvas_ctx.globalAlpha = 0.8;
             Tank.visible_canvas_ctx.drawImage(Tank.scratch_canvas, 0, 0);
             Tank.visible_canvas_ctx.globalAlpha = 1;
-            Tank.displayCoords(Tank.visible_canvas_ctx);
+            Tank.displayCoords();
             Tank.scratch_canvas_ctx.clearRect(0,0,Tank.width, Tank.height);
             Tank.scratch_canvas_ctx.beginPath();
             Tank.visible_canvas_ctx.drawImage(Tank.image_canvas, 0, 0);
@@ -213,7 +241,7 @@ var Tank = {
     },
 
     /**
-     * Sets tank background to path
+     * Sets tank background to given path
      * @param path
      */
     setBackground: function(path) {
@@ -228,22 +256,22 @@ var Tank = {
 };
 
 /**
- *
- * @type {{__interval_ref: null, __interval_ms: number, __step_count: number, init: Simulator.init, setInterval: Simulator.setInterval, stop: Simulator.stop, performStep: Simulator.performStep}}
+ * Simulator is the runner component. It handles action invervalls, start, stop and performs simulation steps
+ * @type {{__interval_ref: null, __interval_ms: number, __step_count: number, init: Simulator.init, setInterval: Simulator.setInterval, stop: Simulator.stop, performStep: Simulator.performStep, getPerceivedEntities: Simulator.getPerceptions}}
  */
 var Simulator = {
 
-    __interval_ref: null,
-    __interval_ms: 500,
-    __step_count: 0,
+    __interval_ref: null,   // active interval instance is placed here
+    __interval_ms: 500,     // currently set milliseconds between steps
+    __step_count: 0,        // current step count
 
     init : function(){
         Log.debug('Simulator ready');
     },
 
     /**
-     * Sets simulation to perform a simulationstep all timespan miliseconds
-     * @param timespan time between simulation steps
+     * Sets simulation to perform a simulation step all timespan milliseconds
+     * @param timespan time between simulation steps in ms
      */
     setInterval : function(timespan){
         Simulator.stop();
@@ -253,7 +281,7 @@ var Simulator = {
     },
 
     /**
-     * Stops simulation
+     * Stops simulation interval (pause no reset)
      */
     stop : function(){
         if (Simulator.__interval_ref) clearInterval(Simulator.__interval_ref);
@@ -262,14 +290,13 @@ var Simulator = {
     },
 
     /**
-     * ********************
-     * *********************
-     * Performs a single simulation step and calls user function
-     * *********************
-     * ********************
+     * ****************************************
+     * ******************************************
+     * Performs a single simulation step and calls user functions in bobbeltank.js
+     * ******************************************
+     * ****************************************
      */
     performStep: function(){
-
 
         var begin = new Date();
         var entities = EntityCollection.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
@@ -280,10 +307,9 @@ var Simulator = {
         for (var entity_i in entities){
             var entity = entities[entity_i];
 
-            var perceptions = Simulator.getPerceptions(
+            var perceptions = EntityCollection.getPerceivedEntities(
                 [entity.posX, entity.posY],
-                EntityCollection.getPositions(),
-                entity.polyk_sensor_polygon);
+                entity.polyk_sensor_polygons);
 
             perform_simulation_step_on_entity(entity, perceptions, Simulator.__step_count);
 
@@ -295,44 +321,11 @@ var Simulator = {
 
         Tank.flush();
         Simulator.__step_count++;
-    },
-
-    /**
-     * Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
-     * @param own_pos position of Entity-Object itself. (Would perceive itself otherwise)
-     * @param perceivable_positions list of positions of perceivable points
-     * @param polyk_polygons_object sensor polygon in polyk format provided by Entity
-     * @returns {null} perceived object or null if empty
-     */
-    getPerceptions: function(own_pos, perceivable_positions, polyk_polygons_object) {
-        var perceptions = {};
-        for (var sensor_tag in polyk_polygons_object){
-            var polyk_polygon = polyk_polygons_object[sensor_tag];
-            for (var pos_i in perceivable_positions) {
-                var position = perceivable_positions[pos_i];
-                if (position[0] === own_pos[0] && position[1] === own_pos[1])
-                    continue; //skip self
-
-                if (PolyK.ContainsPoint(polyk_polygon, position[0], position[1])){
-                    var perceivedEntity = EntityCollection.getEntityByIndex(pos_i);
-                    if (!perceptions[sensor_tag]){
-                        perceptions[sensor_tag] = [];
-                    }
-                    perceptions[sensor_tag].push(perceivedEntity);
-                }
-            }
-        }
-
-        if (Object.keys(perceptions).length) {
-            return perceptions;
-        } else {
-            return null;
-        }
     }
 };
 
 /**
- * Handles user interactions with control panel
+ * Handles user interactions with web components in control panel
  * @type {{init: ControlPanel.init}}
  */
 var ControlPanel = {
@@ -375,16 +368,14 @@ var ControlPanel = {
         $('#displayPerceptionsCheck').change(function(){
             Tank.showPerceptions = $(this).is(":checked");
         });
-
-        ControlPanel.disable();
     },
 
-    disable: function() {
-        
-    },
-
-    enable: function() {
-
+    setVisDisabled: function(disabled){
+        $('#disableAllCheck').prop('checked', disabled);
+        $('#displayCoordsCheck').prop('checked', !disabled);
+        $('#displayColorsCheck').prop('checked', !disabled);
+        $('#displayImagesCheck').prop('checked', !disabled);
+        $('#displayPerceptionsCheck').prop('checked', !disabled);
     }
 };
 
@@ -395,14 +386,18 @@ var ControlPanel = {
  */
 var Log = {
 
-    hide_debug: false,
+    show_debug: true,
+    show_info: true,
     oldLog: null,
 
     /**
-     * Initializes application log. Redirects console.log to webpage
+     * Initializes application log. Redirects console.log to web page
      * (do not use console.log anymore. Use Log.debug, Log.info or Log.error instead)
      */
     init: function(){
+
+        if (simulator_parameters['log'] && simulator_parameters['log']['level'])
+            Log.setLogLevel(simulator_parameters['log']['level']);
 
         Log.oldLog = console.log;
 
@@ -415,33 +410,63 @@ var Log = {
             Log.error('In line ' + lineno + ' of ' + (source.replace(/^.*[\\\/]/, '')) + '\n -> ' + error + '\n -> (' + message + ')', 60);
         }
 
-        console.log('Console redirected to Bobbel log');
+        console.log('Redirected console.log to Log.debug');
+
+    },
+
+    /**
+     * Sets log levels
+     * debug shows all messages
+     * info hides debug messages
+     * error hides debug and info messages. error are displayed only
+     * @param logLevel can be debug, info or error
+     */
+    setLogLevel: function(logLevel) {
+
+        switch (logLevel) {
+            case 'debug': {
+                Log.show_debug = true;
+                Log.show_info = true;
+                Log.debug('Setting log level to debug');
+            }; break;
+            case 'info': {
+                Log.show_debug = false;
+                Log.show_info = true;
+                Log.info('Setting log level to info');
+            }; break;
+            case 'error': {
+                Log.show_debug = false;
+                Log.show_info = false;
+            }; break;
+            default : Log.error('Invalid parameter for log level. Use info, debug or error');
+        }
     },
 
     /**
      * Adds message of level info to log
      * @param message log message
      * @param time display time in seconds
-     * @param tag a name that can be used to name and then replace a specific message on update (for fast parameters update)
+     * @param tag a message. New message with tag replace former message with same tag (like a own chanel for fast parameter updates)
      */
     info: function(message, time, tag){
-        Log.__addEntry('<strong>[Info]</strong> ' + message, time, tag);
+        if (Log.show_info) Log.__addEntry('<strong>[Info]</strong> ' + message, time, tag);
     },
 
     /**
      * Adds message of level debug to log
      * @param message log message
      * @param time display time in seconds
-     * @param tag a name that can be used to name and then replace a specific message on update (for fast parameters update)
+     * @param tag a message. New message with tag replace former message with same tag (like a own chanel for fast parameter updates)
      */
     debug: function(message, time, tag){
-        if (!Log.hide_debug) Log.__addEntry('<strong>[Debug]</strong> ' + message, time, tag);
+        if (Log.show_debug) Log.__addEntry('<strong>[Debug]</strong> ' + message, time, tag);
     },
 
     /**
      * Adds message of level error to log
      * @param message log message
      * @param time display time in seconds
+     * @param tag a message. New message with tag replace former message with same tag (like a own chanel for fast parameter updates)
      */
     error: function(message, time, tag){
         Log.__addEntry('<strong style="color:red;">[ERROR] ' + message + '</strong>', time, tag);
@@ -451,7 +476,7 @@ var Log = {
      * Adds new textelement as entry to log. (Is used by info, debug and error function)
      * @param message message string of log entry
      * @param time display time in seconds
-     * @param tag a name that can be used to name and then replace a specific message on update (for fast parameters update)
+     * @param tag a message. New message with tag replace former message with same tag (like a own chanel for fast parameter updates)
      * @private
      */
     __addEntry: function(message, time, tag) {
@@ -486,13 +511,19 @@ var Log = {
 };
 
 /**
- * Handles all Entities in the system
+ * Handles all Entities in the system. Some kind of entity database where the bobbels live
  * @type {{__entities: Array, setEntities: EntityCollection.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
  */
 var EntityCollection = {
 
     __entities: [],
 
+    /**
+     * Adds entities and sensor information as defined in properties.js to data model
+     * Generates an instance of Entity.class for every entity in properties.js
+     * @param input_entities list of Entities as defined in properties.js
+     * @param sensors sensor-object as defined in properties.js
+     */
     setEntities: function(input_entities, sensors){
         EntityCollection.__entities = [];
 
@@ -500,6 +531,26 @@ var EntityCollection = {
 
             var logMsg = 'Updated entity list to:';
             for (var i in input_entities) {
+                var input_entity = input_entities[i];
+
+                // if position not set use random
+                if (simulator_parameters['entities']
+                    && simulator_parameters['entities']['set_position_randomly_if_undefined']
+                    && !input_entity['position']) {
+                    var rand_pos = [Math.floor(Math.random() * Tank.width) + 0, Math.floor(Math.random() * Tank.height) + 0];
+                    Log.debug('Placing ' + input_entity['name'] + ' at [' + rand_pos + ']');
+                    input_entity['position'] = rand_pos;
+                }
+
+                // if direction not set use random
+                if (simulator_parameters['entities']
+                    && simulator_parameters['entities']['set_direction_randomly_if_undefined']
+                    && !input_entity['direction']) {
+                    var rand_direct = Math.floor(Math.random() * 360) + 0;
+                    Log.debug('Rotating ' + input_entity['name'] + ' to ' + rand_direct + '°');
+                    input_entity['direction'] = rand_direct;
+                }
+
                 var entity = new Entity(input_entities[i], sensors);
                 logMsg += '\n' + entity;
                 EntityCollection.__entities.push(entity);
@@ -515,6 +566,13 @@ var EntityCollection = {
             EntityCollection.setMovementBounds(0, 0, Tank.width, Tank.height);
     },
 
+    /**
+     * Transfers movement boundaries (such as tank size) into all entities
+     * @param minX boundary position
+     * @param minY boundary position
+     * @param maxX boundary position
+     * @param maxY boundary position
+     */
     setMovementBounds: function(minX, minY, maxX, maxY) {
         Log.debug('Restricting movement to X:' + minX + '-' + maxX + ' Y:' + minY + '-' + maxY);
         for (var i in EntityCollection.__entities){
@@ -522,6 +580,9 @@ var EntityCollection = {
         }
     },
 
+    /**
+     * Removes all boundaries from entities
+     */
     clearMovementBounds: function() {
         Log.debug('Removing movement restrictions of entities');
         for (var i in EntityCollection.__entities){
@@ -529,10 +590,18 @@ var EntityCollection = {
         }
     },
 
+    /**
+     * Returns list of entity objects [{entity_1},{entity_2},{entity_3},...]
+     * @returns {Array}
+     */
     getEntities: function(){
         return EntityCollection.__entities;
     },
 
+    /**
+     * Returns list of positions for all entities [[x,y],[x,y],[x,y],...]
+     * @returns {Array}
+     */
     getPositions: function() {
         var positions = [];
         for (var i in EntityCollection.__entities) {
@@ -541,40 +610,60 @@ var EntityCollection = {
         return positions;
     },
 
+    /**
+     * Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
+     * @param own_pos position of Entity-Object itself. (Would perceive itself otherwise)
+     * @param polyk_polygons_object sensor polygon in polyk format provided by Entity {sensorname_1: [polyk_coords], sensorname_2: [polyk_coords], ...}
+     * @param perceivable_positions list of positions that can be perceived if inside sensor polygon
+     * @returns {null} perceived object {sensorname_1: [list_of_perceived_entities],sensorname_2: [list_of_perceived_entities],..} or null if empty
+     */
+    getPerceivedEntities: function(own_pos, polyk_polygons_object) {
+        var perceivable_positions = EntityCollection.getPositions()
+
+        var perceptions = {};
+        for (var sensor_tag in polyk_polygons_object){
+            var polyk_polygon = polyk_polygons_object[sensor_tag];
+            for (var pos_i in perceivable_positions) {
+                var position = perceivable_positions[pos_i];
+                if (position[0] === own_pos[0] && position[1] === own_pos[1])
+                    continue; //skip self
+
+                if (PolyK.ContainsPoint(polyk_polygon, position[0], position[1])){
+                    var perceivedEntity = EntityCollection.getEntityByIndex(pos_i);
+                    if (!perceptions[sensor_tag]){
+                        perceptions[sensor_tag] = [];
+                    }
+                    perceptions[sensor_tag].push(perceivedEntity);
+                }
+            }
+        }
+
+        if (Object.keys(perceptions).length) {
+            return perceptions;
+        } else {
+            return null;
+        }
+    },
+
+    /**
+     * Helper function
+     * @param index
+     * @returns {*}
+     */
     getEntityByIndex: function(index){
         return EntityCollection.__entities[index];
     },
 
+    /**
+     * If you need to get an entity by uuid
+     * @param uuid
+     * @returns {*}
+     */
     getEntityByUUID: function(uuid) {
         for (var i in EntityCollection.__entities)
             if (EntityCollection.__entities[i]['uuid'] === uuid)
                 return EntityCollection.__entities[i];
-    },
-
-    getEntityByName: function(name) {
-        for (var i in EntityCollection.__entities)
-            if (EntityCollection.__entities[i]['name'] === name)
-                return EntityCollection.__entities[i];
-    },
-
-    /**
-     * Returns name of entity with index
-     * @param index
-     * @returns {*}
-     */
-    getNameByIndex: function(index) {
-        return EntityCollection.__entities[index]['name'];
-    },
-
-    /**
-     * Returns uuid of entity with index
-     * @param index
-     * @returns {*}
-     */
-    getUUIDByIndex: function(index) {
-        return EntityCollection.__entities[index]['uuid'];
     }
-
 };
 
 /**
@@ -586,9 +675,28 @@ var EntityCollection = {
 /**
  * Entity Class description. Use var foo = new Entity(entity_object, sensors_object)
  * (To reference the entity use the unique ID instead of the name)
- * Entities properties are: name, image_src, position, uuid and sensor_polygons.
- * @param entity_object is an single entity object from config with keys name, image, position etc..
- * @constructor adds fields. Property position will stay undefined if invalid
+ * Entities properties are:
+ *
+ *              name:                   string name of an entity provided in properties.js
+ *              img_src:                image path provided in properties.js
+ *              color:                  color provided in properties.js
+ *              posX:                   number with X-coordinate. If changed directly call entity.updateSensors() to update polygons
+ *              posY:                   number with Y-coordinate. If changed directly call entity.updateSensors() to update polygons
+ *              direction:              rotation of entity in degrees (0-360) 0 is along x-axis 90 along y-axis ... If changed directly call entity.updateSensors() to update polygons
+ *              sensor_colors:          object providing sensor color for every sensor. Use entity.sensor_colors[<sensorname>]
+ *              sensor_polygons:        object contains calculated sensor polygons around entity based on current position and direction Use entity.sensor_polygons[<sensorname>]
+ *              uuid:                   generated unique-id. Use to reference entity instead of name-property if you use same name for multiple entities
+ *              movementRestricted:     true if entities movement is restricted into boundaries (tank for example). false else
+ *              restrictedXmin          number if movement restricted. null else
+ *              restrictedXmax          number if movement restricted. null else
+ *              restrictedYmin          number if movement restricted. null else
+ *              restrictedYmax          number if movement restricted. null else
+ *              polyk_sensor_polygons:  same object as sensor_polygons but in other format needed by library PolyK
+ *                                      PolyK is included in this project and helps with polygon-functions
+ *                                      See (http://polyk.ivank.net/?p=documentation) for documentation
+ *
+ * @param entity_object is an single entity object from properties.js with keys name, image, position etc..
+ * @constructor adds fields
  */
 function Entity(entity_object, sensors_object) {
     this.name = entity_object['name'];
@@ -619,7 +727,7 @@ function Entity(entity_object, sensors_object) {
         }
     }
     this.sensor_polygons = {};
-    this.polyk_sensor_polygon = {};
+    this.polyk_sensor_polygons = {};
     this.updateSensors();
 
     //set unique ID
@@ -630,7 +738,7 @@ function Entity(entity_object, sensors_object) {
 };
 
 /**
- * Moves entity along current direction
+ * Moves entity distance px along current direction
  * @param distance
  */
 Entity.prototype.move = function(distance) {
@@ -651,8 +759,8 @@ Entity.prototype.move = function(distance) {
 };
 
 /**
- * Rotates entity depending on degrees (0-360)
- * @param degrees
+ * Rotates entity degrees (0-360). Positive degrees rotates counterclockwise negative clockwise
+ * @param degrees in deg 0-360
  */
 Entity.prototype.rotate = function(degrees) {
     this.direction += degrees;
@@ -666,7 +774,7 @@ Entity.prototype.rotate = function(degrees) {
 };
 
 /**
- * Restricts movement of entities to these coordinates. (Handled on move method)
+ * Restricts movement of entities to these coordinates. (Verified in move() and updateSensors() method)
  * @param minX
  * @param minY
  * @param maxX
@@ -692,6 +800,12 @@ Entity.prototype.clearMovementBounds = function() {
  * Updates entities sensor_polygons etc. according to position and direction properties
  */
 Entity.prototype.updateSensors = function(){
+
+    if (this.movementRestricted){
+        this.posX = Math.max(this.restrictedXmin, Math.min(newPosX, this.restrictedXmax));
+        this.posY = Math.max(this.restrictedYmin, Math.min(newPosY, this.restrictedYmax));
+    }
+
     var posX = this.posX;
     var posY = this.posY;
     var direction = this.direction |0;
@@ -717,7 +831,7 @@ Entity.prototype.updateSensors = function(){
             polyk_sensorPolygon.push(sensorPolygon[pos_i][0]);
             polyk_sensorPolygon.push(sensorPolygon[pos_i][1]);
         }
-        this.polyk_sensor_polygon[sensor] = polyk_sensorPolygon;
+        this.polyk_sensor_polygons[sensor] = polyk_sensorPolygon;
     }
 };
 
@@ -726,11 +840,12 @@ Entity.prototype.updateSensors = function(){
  * @returns {string}
  */
 Entity.prototype.toString = function(){
-    return ' > "'
-        + (this.name? this.name: '"name"-property missing!')
+    return '-> '
+        + (this.name? this.name : '"name"-property missing!')
         + (this.color? ' ('+this.color+')': '')
-        + (this.posX && this.posY? '" at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.posX +', ' + this.posY + ']')
-        + (this.image_src? '': ' without "image" property!')
+        + (this.posX && this.posY? ' at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.posX +', ' + this.posY + ']')
+        + (this.direction? ' (' + this.direction + '°)' : '')
+        + (this.image_src? '': ' without "image"-property!')
         + (Object.keys(this.__sensor_perimeters).length? ' with ['+Object.keys(this.__sensor_perimeters)+']': ' without any "perceptions" defined!');
 };
 
@@ -750,6 +865,16 @@ Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
     return [Math.cos(angle) * (pointX-originX) - Math.sin(angle) * (pointY-originY) + originX,
         Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY]
 };
+
+
+
+
+
+
+
+/**
+ * End of class definitions
+ */
 
 /**
  * EntryPoint to core javascript if document loaded

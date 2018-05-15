@@ -1,3 +1,6 @@
+//TIP: If you disable caching in webbrowser. Live.js reloads page on any changes of these files automatically
+'use strict';
+
 /**
  * List of Bobbel entities
  * [{bobbel_1},{bobbel_2},{bobbel_3},...]
@@ -29,19 +32,16 @@ var bobbel_entities =
         {
             name: "Wilson",
             image: "images/150x150_bubble.png",
-            position : [1,40],
             perceptions : ["see", "feel"]
         }, {
             name: "Malotzki",
             image: "images/150x150_bubble.png",
             color: "cyan",
-            position : [10,80],
             perceptions : ["pirate"],
             direction : 20
         }, {
             name: "PEWPEW",
             image: "images/150x150_bubble.png",
-            position : [100,20],
             perceptions : ["see"],
             direction : 50
         }, {
@@ -55,9 +55,7 @@ var bobbel_entities =
             name: "Bobbel",
             image: "images/150x150_bubble.png",
             color: "green",
-            position : [200,375],
-            perceptions : ["see", "hear", "feel"],
-            direction : 0
+            perceptions : ["see", "hear", "feel"]
         }
     ];
 
@@ -114,18 +112,28 @@ var bobbel_sensors = {
 
 /**
  * Parameters for simulator
- * You can define your own background image or set entities movement limitations
+ * You can define your own background image, set entities movement limitations or define log level (debug, info, error)
  * If not limited the entities don't stop at simulators borders
  * @type {{tank: {background_image: string}, entities: {limit_movement_to_tank_boundaries: boolean}}}
  */
 var simulator_parameters = {
 
     tank: {
-        background_image: 'images/milky-way-2695569_960_720'
+        background_image: 'images/milky-way-2695569_960_720',
+        width: 800,                                             // can specify own tank with
+        height: 600,                                            // can specify own tank height
+        auto_size: true,                                        // if true tank size adjusted by web page size
+        disable: false                                          // if you prefer you can start without visualization by default
     },
 
     entities: {
-        limit_movement_to_tank_boundaries: true
+        limit_movement_to_tank_boundaries: true,                 // if true entities are only allowed to move inside tank
+        set_position_randomly_if_undefined: true,                // if you don't define position property its set randomly
+        set_direction_randomly_if_undefined: true                // if you don't define a direction property its set randomly
+    },
+
+    log: {
+        level: "debug"                                          // can be changed to debug, info, error
     }
 };
 
