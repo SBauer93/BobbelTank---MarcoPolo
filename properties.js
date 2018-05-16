@@ -113,7 +113,7 @@ var bobbel_sensors = {
 var simulator_parameters = {
 
     tank: {
-        background_image: 'images/milky-way-2695569_960_720',
+        background_image: 'images/default_background.jpg',
         width: 800,                                             // can specify own tank with
         height: 600,                                            // can specify own tank height
         auto_size: true,                                        // if true tank size adjusted by web page size
