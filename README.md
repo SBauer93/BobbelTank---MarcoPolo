@@ -57,7 +57,7 @@ To define Sensors **properties.js** contains another variable (this time an obje
 	var bobbel_sensors = {
 	
 	    see: {
-	        perimeter: [[0,0], [50,20], [50,-20]],
+	        perimeter: [[0,0], [20,10], [20,-10]],
 	        color : "orange"
 	    }, ...
 	};
