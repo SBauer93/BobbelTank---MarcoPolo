@@ -104,4 +104,4 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
  */
 var perform_simulation_step_finalization = function(entity_list, step_count, duration) {
     Log.debug('Performed simulation step ' + step_count + ' for ' + duration + 'ms', 1, "simulator_performing_step");
-}
+};

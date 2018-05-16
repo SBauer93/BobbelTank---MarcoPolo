@@ -554,7 +554,7 @@ var EntityCollection = {
                 // if direction not set use random
                 if (simulator_parameters['entities']
                     && simulator_parameters['entities']['set_direction_randomly_if_undefined']
-                    && !input_entity['direction']) {
+                    && input_entity['direction'] === undefined) {
                     var rand_direct = Math.floor(Math.random() * 360) + 0;
                     Log.debug('Rotating ' + input_entity['name'] + ' to ' + rand_direct + '°');
                     input_entity['direction'] = rand_direct;

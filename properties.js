@@ -32,7 +32,8 @@ var bobbel_entities =
         {
             name: "Wilson",
             image: "images/150x150_bubble.png",
-            perceptions : ["see", "feel"]
+            perceptions : ["see", "hear"],
+            color: "black"
         }, {
             name: "Malotzki",
             image: "images/150x150_bubble.png",
@@ -40,19 +41,14 @@ var bobbel_entities =
             perceptions : ["pirate"],
             direction : 20
         }, {
-            name: "PEWPEW",
-            image: "images/150x150_bubble.png",
-            perceptions : ["see"],
-            direction : 50
-        }, {
             name: "Hannah",
             image: "images/150x150_bubble.png",
             color: "pink",
             position : [200,375],
-            perceptions : ["see", "hear", "feel"],
-            direction : 260
+            perceptions : ["see"],
+            direction : 0
         }, {
-            name: "Bobbel",
+            name: "Captain Bobbel",
             image: "images/150x150_bubble.png",
             color: "green",
             perceptions : ["see", "hear", "feel"]
@@ -87,24 +83,20 @@ var bobbel_entities =
 var bobbel_sensors = {
 
     see: {
-        perimeter: [[0,0], [40,20], [40,-20]],
-        color : "#FFDD00"
+        perimeter: [[0,0], [50,20], [50,-20]],
+        color : "orange"
     },
     hear: {
         perimeter: [[-20,20], [20,20], [20,-20], [-20,-20]],
-        color : "#FFDD00"
+        color : "orange"
     },
     feel: {
         perimeter: [[0,0],[60, 30], [60, 15], [0, 0], [60, -15], [60, -30]],
-        color : "#FFDD00"
+        color : "orange"
     },
     pirate: {
         perimeter: [[0,0],[15, 30], [15, -10]],
-        color : "#FFDD00"
-    },
-    rod: {
-        perimeter: [[0,0],[-20,40],[-10,55], [10,55],[20,45],[30,20], [200,20], [220,10], [220,-10], [200,-20], [10,-20], [0,-30],[-10,-10],],
-        color : "pink"
+        color : "orange"
     }
 };
 
