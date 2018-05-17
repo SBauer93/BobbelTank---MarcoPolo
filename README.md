@@ -27,10 +27,10 @@ For you mostly relevant are:
 
 If you want to use additonal core functionality like painting things, change html layout etc. you can use (and if necessary rewrite) the core-files. [Bobbeltank.core.js documentation](doc/bobbeltank.core.md)
 
-Two hints:
+####Two hints
 
-1. This project uses [live.js](http://livejs.com). If you use a web-server such as *mamp* to host this project and deactivate our browser cache (mostly somewhere in debug mode). Page refreshes automatically if you change something
-2. This project uses [PolyK](http://polyk.ivank.net). And the Entities provide their sensor polygons also automatically as polyk sensor polygons. If you do polygon calculations, you can use this library.
+1. **Autorefresh on file change**: This project uses [live.js](http://livejs.com). If you use a web-server such as *mamp* to host this project and deactivate our browser cache (mostly somewhere in debug mode). Page refreshes automatically if you change something
+2. **Polygon Calucation Assistance**: This project uses [PolyK](http://polyk.ivank.net). And the Entity-Objects provide their sensor polygons also automatically as polyk sensor polygons. If you do polygon calculations, you can use this library.
 
 ## How to start
 This section provides some brief steps how to start coding..
@@ -84,7 +84,7 @@ To change behavior look into **bobbeltank.js**. The following functions are prov
 	    Log.info('Initialization done!');
 	};
 	
-This function is called once after program start and everytime you press the "restart" button on control-panel. If you want to switch between different sets of entities or sensor definitions just define them in **properties.js** using your own variable names and change them here in the *setEntities()* function. The Log function outputs your messages in the Control-Panel log.
+This function is called once after program start and everytime you press the "restart" button on control-panel. If you want to switch between different sets of entities or sensor definitions just define them in **properties.js** using your own variable names and change them here in the ```setEntities()``` function. The Log function outputs your messages in the Control-Panel log.
 
 The next function is called at the beginning of every simulation step. One simulation step let all entities defined perceive things and perform their actions (and updates visualisation at the end).
 
@@ -131,33 +131,33 @@ The last function called during a simulation step can be used to clean up afterw
 Again parameters provided is a list of all entities, the current simulation step count and the overall duration of this simulation in milliseconds.
 
 ## The Entity-Object
-The simulator reads your entity information from variable *bobbel_entities* in **properties.js** and generates a living Entity-Object for every entity containing current states, positions, sensor-polygons, some helper functions etc.
+The simulator reads your entity information from variable ```bobbel_entities``` in **properties.js** and generates a living Entity-Object for every entity containing current states, positions, sensor-polygons, some helper functions etc.
 
 ### Properties
 The Entity-Object contains the follwing properties you can use and change. 
-If you need to store new information in a property during simulation, just use ```entity.someproperty = "whatever";```.
+If you want to store other information in a property during simulation, just use ```entity.someproperty = "whatever";```.
 
-* **name:** string name of an entity provided in properties.js
-* **img_src:** image path provided in properties.js
-* **color:** color provided in properties.js
-* **posX:** number with X-coordinate. If changed directly call updateSensors() on entity to update polygons
-* **posY:** number with Y-coordinate. If changed directly call updateSensors() on entity to update polygons
-* **direction:** rotation of entity in degrees (0-360) 0 is along x-axis 90 along y-axis ... If changed directly call updateSensors() on entity to update polygons
-* **sensor_colors:** object providing sensor color for every sensor. Use sensor_colors[<sensorname>] on entity
-* **sensor_polygons:** object contains calculated sensor polygons around entity based on current position and direction Use sensor_polygons[<sensorname>] on entity
-* **uuid:** generated unique-id. Use to reference entity instead of name-property if you use same name for multiple entities
-* **movementRestricted:** true if entities movement is restricted into boundaries (tank for example). false else
-* **restrictedXmin:** number if movement restricted. null else
-* **restrictedXmax:** number if movement restricted. null else
-* **restrictedYmin:** number if movement restricted. null else
-* **restrictedYmax:** number if movement restricted. null else
-* **polyk_sensor_polygons:** same object as sensor_polygons but in other format needed by library PolyK. PolyK is included in this project and helps with polygon-functions documented on their [website](http://polyk.ivank.net/?p=documentation).
+* ```name``` string name of an entity provided in properties.js
+* ```img_src``` image path provided in properties.js
+* ```color``` color provided in properties.js
+* ```posX``` number with X-coordinate. If changed directly call updateSensors() on entity to update polygons
+* ```posY``` number with Y-coordinate. If changed directly call updateSensors() on entity to update polygons
+* ```direction``` rotation of entity in degrees (0-360) 0 is along x-axis 90 along y-axis ... If changed directly call updateSensors() on entity to update polygons
+* ```sensor_colors``` object providing sensor color for every sensor. Use sensor_colors[<sensorname>] on entity
+* ```sensor_polygons``` object contains calculated sensor polygons around entity based on current position and direction Use sensor_polygons[<sensorname>] on entity
+* ```uuid``` generated unique-id. Use to reference entity instead of name-property if you use same name for multiple entities
+* ```movementRestricted``` true if entities movement is restricted into boundaries (tank for example). false else
+* ```restrictedXmin``` number if movement restricted. null else
+* ```restrictedXmax``` number if movement restricted. null else
+* ```restrictedYmin``` number if movement restricted. null else
+* ```restrictedYmax``` number if movement restricted. null else
+* ```polyk_sensor_polygons``` same object as sensor_polygons but in other format needed by library PolyK. PolyK is included in this project and helps with polygon-functions documented on their [website](http://polyk.ivank.net/?p=documentation).
 
 ### Functions
-* **entity.move(distance_in_px)** moves towards current direction and updates sensor_polygons
-* **entity.rotate(degree)** (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
-* **entity.updateSensors()** if you change posX, posY or direction yourself this updates sensorpolygons for you
-* **entity.toString()** overrides default string output method providing some debug info if necessary
+* ```entity.move(distance_in_px)``` moves towards current direction and updates sensor_polygons
+* ```entity.rotate(degree)``` (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
+* ```entity.updateSensors()``` if you change posX, posY or direction yourself this updates sensorpolygons for you
+* ```entity.toString()``` overrides default string output method providing some debug info if necessary
 
 ## Core functions you can use
 All core functions are defined in **bobbeltank.core.js**. Its documentation can be found here [here](doc/bobbeltank.core.md). Just a brief overview about the most important ones.
@@ -165,34 +165,34 @@ All core functions are defined in **bobbeltank.core.js**. Its documentation can 
 ### EntityCollection
 Handles the Entity-Objects for you. Here you can set simulator entities, find entities or change global entity parameters.
 
-* **EntityCollection.setEntities(input_entities, input_sensors)** Sets simulator entities to *input_entities* having *input_senors*. The *inputs* have to look like defined in **properties.js**
-* **EntityCollection.getEntities()** Returns the list of entities currently used by the simulator
-* **EntityCollection.getPositions()** Returns a list only containing the positions of entities used by the simulator
-* **EntityCollection.getEntityByIndex(index)** Returns the entity at *index* position in the list used by simulator
-* **EntityCollection.getPerceivedEntities(excluded_pos, object_with_polyk_polygons)** Returns all perceived other entities based on their positions. Excluded_pos is own positon (not perceive yourself) and a set of sensor polygons. Entity-Objects calculate their *polyk_polygons* based on position and given sensor perimeters. The *object* maps sensor-tags to corresponding polygons.
-* **EntityCollection.getEntityByUUID(uuid)** Every Entity-Object has its own unique ID. Returns an entity having this unique id. 
+* ```EntityCollection.setEntities(input_entities, input_sensors)``` Sets simulator entities to ```input_entities``` having ```input_senors```. The *inputs* have to look like defined in **properties.js**
+* ```EntityCollection.getEntities()``` Returns the list of entities currently used by the simulator
+* ```EntityCollection.getPositions()``` Returns a list only containing the positions of entities used by the simulator
+* ```EntityCollection.getEntityByIndex(index)``` Returns the entity at *index* position in the list used by simulator
+* ```EntityCollection.getPerceivedEntities(excluded_pos, object_with_polyk_polygons)``` Returns all perceived entities based on their positions. Excluded_pos should be the own positon (not perceive yourself) and a set of sensor polygons. Entity-Objects calculate their *polyk_polygons* based on position and given sensor perimeters. The *object* maps sensor-tags to corresponding polygons. **For correct perceptions make sure, sensor-polygons do not have crossing edges!**
+* ```EntityCollection.getEntityByUUID(uuid)``` Every Entity-Object has its own unique ID. Returns an entity having this unique id. 
 
 ### Tank
 Is the object handling visualization processes. All operations are performed on a scratch or image canvas and transfered to visible canvas using Tank.flush()
 
-* **Tank.displayEntity(Entity-Object)** paints an entity to a scratch canvas. (Called automatically after *perform_simulation_step_on_entity()*)
-* **Tank.displayPerception(polygon, color)** paints (any) polygon to canvas.
-* **Tank.displayEntityColor(color, posX, posY, radius)** paints a colored circle around given point.
-* **Tank.displayImage(source, posX, posY, sizeX, sizeY)** paints image to special image canvas (layer above scratch canvas)
-* **Tank.flush()** Cleanes visible canvas, transfers sratch to visible, transfers image to visible, clears scratch and visible.
+* ```Tank.displayEntity(Entity-Object)``` paints an entity to a scratch canvas. (Called automatically after *perform_simulation_step_on_entity()*)
+* ```Tank.displayPerception(polygon, color)``` paints (any) polygon to canvas.
+* ```Tank.displayEntityColor(color, posX, posY, radius)``` paints a colored circle around given point.
+* ```Tank.displayImage(source, posX, posY, sizeX, sizeY)``` paints image to special image canvas (layer above scratch canvas)
+* ```Tank.flush()``` Cleanes visible canvas, transfers sratch to visible, transfers image to visible, clears scratch and visible.
 
 ### Simulator
 Handles simulation and simulation steps
 
-* **Simulator.setInterval(timespan)** starts simulation with given intervall
-* **Simulator.stop()** pause simulation
-* **Simulator.performStep()** performs steps. calls perform functions in **bobbeltank.js**
+* ```Simulator.setInterval(timespan)``` starts simulation with given intervall
+* ```Simulator.stop()``` pause simulation
+* ```Simulator.performStep()``` performs steps. calls perform functions in **bobbeltank.js**
 
 ### Log
 Use to perform output in log. Messages can be shown for a specific amount of time (optional). Messages can be tagged (optional). New messages with a tag replace old message having the same tag. So you can create channels for fast changing outputs.
 
-* **Log.debug(message, sec, tag)** Shows debug-message for *sec* seconds tagged with *tag*
-* **Log.info(message, sec, tag)** Shows debug-message for *sec* seconds tagged with *tag*.
-* **Log.error(message, sec, tag)** Shows debug-message for *sec* seconds tagged with *tag*.
+* ```Log.debug(message, sec, tag)``` Shows debug-message for *sec* seconds tagged with *tag*
+* ```Log.info(message, sec, tag)``` Shows debug-message for *sec* seconds tagged with *tag*.
+* ```Log.error(message, sec, tag)``` Shows debug-message for *sec* seconds tagged with *tag*.
 
-Sec and tag are optional. You can just use **Log.debug(message)** or **Log.debug(message, sec)** if you like. Log level to hide **debug** or **info** outputs can be set in the simulation parameters in **properties.js**.
+Sec and tag are optional. You can just use ```Log.debug(message)``` or ```Log.debug(message, sec)``` if you like. Log level to hide **debug** or **info** outputs can be set in the simulation parameters in **properties.js**.
