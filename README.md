@@ -92,7 +92,7 @@ The next function is called at the beginning of every simulation step. One simul
 	
 	};
 	
-As parameters you get tne entity_list. This list now contains Entity-Objects. Thes objects are the living versions of your Entities you defined in **properties.js**. And the current simulation step_count.
+As parameters you get a entity_list. This list now contains Entity-Objects. Thes objects are the living versions of your Entities you defined in **properties.js**. And the current simulation step_count.
 
 The next function is called during simulation once for every single entity.
 
@@ -134,7 +134,8 @@ Again parameters provided is a list of all entities, the current simulation step
 The simulator reads your entity information from variable *bobbel_entities* in **properties.js** and generates a living Entity-Object for every entity containing current states, positions, sensor-polygons, some helper functions etc.
 
 ### Properties
-The Entity-Object contains the follwing properties you can use and change.
+The Entity-Object contains the follwing properties you can use and change. 
+If you need to store new information in a property during simulation, just use ```entity.someproperty = "whatever";```.
 
 * **name:** string name of an entity provided in properties.js
 * **img_src:** image path provided in properties.js
