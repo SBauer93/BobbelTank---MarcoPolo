@@ -27,7 +27,7 @@ For you mostly relevant are:
 
 If you want to use additonal core functionality like painting things, change html layout etc. you can use (and if necessary rewrite) the core-files. [Bobbeltank.core.js documentation](doc/bobbeltank.core.md)
 
-####Two hints
+#### Two hints
 
 1. **Autorefresh on file change**: This project uses [live.js](http://livejs.com). If you use a web-server such as *mamp* to host this project and deactivate our browser cache (mostly somewhere in debug mode). Page refreshes automatically if you change something
 2. **Polygon Calucation Assistance**: This project uses [PolyK](http://polyk.ivank.net). And the Entity-Objects provide their sensor polygons also automatically as polyk sensor polygons. If you do polygon calculations, you can use this library.
