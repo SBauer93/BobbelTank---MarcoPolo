@@ -378,6 +378,9 @@ Handles all Entities in the system. Some kind of entity database where the bobbe
 
 * [EntityCollection](#EntityCollection) : <code>object</code>
     * [.setEntities(input_entities, sensors)](#EntityCollection.setEntities)
+    * [.addEntity(input_entity, sensors)](#EntityCollection.addEntity) ⇒ [<code>Entity</code>](#Entity)
+    * [.removeEntityAtIndex(index)](#EntityCollection.removeEntityAtIndex)
+    * [.removeEntityWithUUID(uuid)](#EntityCollection.removeEntityWithUUID) ⇒ <code>\*</code>
     * [.setMovementBounds(minX, minY, maxX, maxY)](#EntityCollection.setMovementBounds)
     * [.clearMovementBounds()](#EntityCollection.clearMovementBounds)
     * [.getEntities()](#EntityCollection.getEntities) ⇒ <code>Array</code>
@@ -398,6 +401,41 @@ Generates an instance of Entity.class for every entity in properties.js
 | --- | --- |
 | input_entities | list of Entities as defined in properties.js |
 | sensors | sensor-object as defined in properties.js |
+
+<a name="EntityCollection.addEntity"></a>
+
+### EntityCollection.addEntity(input_entity, sensors) ⇒ [<code>Entity</code>](#Entity)
+Adds a single entity to the end of the EntitiesCollection list. Additionally (!) returns a reference to Entity-Object
+
+**Kind**: static method of [<code>EntityCollection</code>](#EntityCollection)  
+**Returns**: [<code>Entity</code>](#Entity) - additionally returns this reference. Entity is already added  
+
+| Param | Description |
+| --- | --- |
+| input_entity | single input entry as defined in properties.js |
+| sensors | sensor definition as defined in properties.js |
+
+<a name="EntityCollection.removeEntityAtIndex"></a>
+
+### EntityCollection.removeEntityAtIndex(index)
+Removes Entity from List with index
+
+**Kind**: static method of [<code>EntityCollection</code>](#EntityCollection)  
+
+| Param |
+| --- |
+| index | 
+
+<a name="EntityCollection.removeEntityWithUUID"></a>
+
+### EntityCollection.removeEntityWithUUID(uuid) ⇒ <code>\*</code>
+Removes Entity having this uuid
+
+**Kind**: static method of [<code>EntityCollection</code>](#EntityCollection)  
+
+| Param |
+| --- |
+| uuid | 
 
 <a name="EntityCollection.setMovementBounds"></a>
 

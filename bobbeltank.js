@@ -94,6 +94,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         }
         entity.move(1);
     }
+
+    Tank.displayEntity(entity); // adds updated entity to Tank visualisation
 };
 
 /**

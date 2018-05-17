@@ -315,8 +315,6 @@ var Simulator = {
                 entity.polyk_sensor_polygons);
 
             perform_simulation_step_on_entity(entity, perceptions, Simulator.__step_count);
-
-            Tank.displayEntity(entity);
         }
 
         var end = new Date();
@@ -537,43 +535,78 @@ var EntityCollection = {
     setEntities: function(input_entities, sensors){
         EntityCollection.__entities = [];
 
-        if (input_entities.length) {
-
-            var logMsg = 'Updated entity list to:';
-            for (var i in input_entities) {
-                var input_entity = input_entities[i];
-
-                // if position not set use random
-                if (simulator_parameters['entities']
-                    && simulator_parameters['entities']['set_position_randomly_if_undefined']
-                    && !input_entity['position']) {
-                    var rand_pos = [Math.floor(Math.random() * Tank.width) + 0, Math.floor(Math.random() * Tank.height) + 0];
-                    Log.debug('Placing ' + input_entity['name'] + ' at [' + rand_pos + ']');
-                    input_entity['position'] = rand_pos;
-                }
-
-                // if direction not set use random
-                if (simulator_parameters['entities']
-                    && simulator_parameters['entities']['set_direction_randomly_if_undefined']
-                    && input_entity['direction'] === undefined) {
-                    var rand_direct = Math.floor(Math.random() * 360) + 0;
-                    Log.debug('Rotating ' + input_entity['name'] + ' to ' + rand_direct + '°');
-                    input_entity['direction'] = rand_direct;
-                }
-
-                var entity = new Entity(input_entities[i], sensors);
-                logMsg += '\n' + entity;
-                EntityCollection.__entities.push(entity);
-                Tank.displayEntity(entity);
-            }
-            Log.debug(logMsg);
-            Tank.flush();
-        } else {
+        if (!input_entities.length) {
             Log.debug("Updated entity list to empty list");
         }
 
+        for (var i in input_entities) {
+            var entity_obj = EntityCollection.addEntity(input_entities[i], sensors);
+            Tank.displayEntity(entity_obj);
+        }
+
+        Log.debug('Cleared simulator entity list and added ' + input_entities.length + ' new entities');
+        Tank.flush();
+
         if (simulator_parameters['entities'] && simulator_parameters['entities']['limit_movement_to_tank_boundaries'])
             EntityCollection.setMovementBounds(0, 0, Tank.width, Tank.height);
+    },
+
+    /**
+     * Adds a single entity to the end of the EntitiesCollection list. Additionally (!) returns a reference to Entity-Object
+     * @param input_entity single input entry as defined in properties.js
+     * @param sensors sensor definition as defined in properties.js
+     * @returns {Entity} additionally returns this reference. Entity is already added
+     */
+    addEntity: function(input_entity, sensors) {
+
+        // if position not set use random
+        if (simulator_parameters['entities']
+            && simulator_parameters['entities']['set_position_randomly_if_undefined']
+            && !input_entity['position']) {
+            var rand_pos = [Math.floor(Math.random() * Tank.width) + 0, Math.floor(Math.random() * Tank.height) + 0];
+            Log.debug('(Placed ' + input_entity['name'] + ' at [' + rand_pos + '])');
+            input_entity['position'] = rand_pos;
+        }
+
+        // if direction not set use random
+        if (simulator_parameters['entities']
+            && simulator_parameters['entities']['set_direction_randomly_if_undefined']
+            && input_entity['direction'] === undefined) {
+            var rand_direct = Math.floor(Math.random() * 360) + 0;
+            Log.debug('(Rotated ' + input_entity['name'] + ' to ' + rand_direct + '°)');
+            input_entity['direction'] = rand_direct;
+        }
+
+        var entity = new Entity(input_entity, sensors);
+
+        if (simulator_parameters['entities']
+            && simulator_parameters['entities']['limit_movement_to_tank_boundaries'])
+            entity.setMovementBounds(0, 0, Tank.width, Tank.height);
+
+        EntityCollection.__entities.push(entity);
+        Log.debug("Adding " + entity);
+        return entity;
+    },
+
+    /**
+     * Removes Entity from List with index
+     * @param index
+     */
+    removeEntityAtIndex: function(index){
+        if (index > -1) {
+            EntityCollection.__entities.splice(index, 1);
+        }
+    },
+
+    /**
+     * Removes Entity having this uuid
+     * @param uuid
+     * @returns {*}
+     */
+    removeEntityWithUUID: function(uuid) {
+        for (var index in EntityCollection.__entities)
+            if (EntityCollection.__entities[index]['uuid'] === uuid)
+                EntityCollection.__entities.splice(index, 1);
     },
 
     /**
@@ -860,13 +893,13 @@ Entity.prototype.updateSensors = function(){
  * @returns {string}
  */
 Entity.prototype.toString = function(){
-    return '-> '
-        + (this.name? this.name : '"name"-property missing!')
-        + (this.color? ' ('+this.color+')': '')
-        + (this.posX && this.posY? ' at pos [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.posX +', ' + this.posY + ']')
-        + (this.direction? ' (' + this.direction + '°)' : '')
-        + (this.image_src? '': ' without "image"-property!')
-        + (Object.keys(this.__sensor_perimeters).length? ' with ['+Object.keys(this.__sensor_perimeters)+']': ' without any "perceptions" defined!');
+    return 'Entity-Obj: '
+        + (this.name? this.name +'\n': '"name"-property missing!\n')
+        + (this.color? '- color: '+this.color +'\n': '')
+        + (this.posX && this.posY? '- position: [' + this.posX + ', ' + this.posY + ']' : ' invalid "position"-property [' + this.posX +', ' + this.posY + ']\n')
+        + (this.direction !== undefined? ' (' + this.direction + '°)\n' : '\n')
+        + (this.image_src? '': ' without "image"-property!\n')
+        + (Object.keys(this.__sensor_perimeters).length? '- sensors: ['+Object.keys(this.__sensor_perimeters)+']': ' without any "perceptions" defined!');
 };
 
 /**

@@ -9,11 +9,15 @@ canvas {
     width: 100%;
 }
 
+#simulator {
+    height: 90vh;
+}
+
 #tank {
     position: relative;
-    background-color: orange;
-    height: 90vh;
+    background-color: royalblue;
     padding: 0;
+    height: 100%;
 
     -webkit-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
     -moz-box-shadow: 10px 10px 38px -15px rgba(0,0,0,0.92);
@@ -21,7 +25,9 @@ canvas {
 }
 
 #controlpanel {
-    height: 90vh;
+    height: 100%;
+    display:flex;
+    flex-direction:column;
 }
 
 .controlpanel_slider {
@@ -71,6 +77,11 @@ canvas {
 .controlpanel_checkboxes {
     font-size: 0.8em;
     line-height: 1.5em;
+}
+
+#controlpanel_log {
+    flex:1;
+    overflow-y: scroll;
 }
 
 .log-entry {

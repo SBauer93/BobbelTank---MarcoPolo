@@ -119,6 +119,8 @@ The next function is called during simulation once for every single entity.
 	        }
 	        entity.move(1);
 	    }
+	    
+	    Tank.displayEntity(entity); // <- paints entity to scratch canvas
 	};
 	
 The parameters provided are the (living) Entity-Object. Its perceptions containing a object mapping sensor-tags to lists of perceived other Entity-Objects (or perceptions = null if nothing is percieved) and the step_cound for current simulation step.
@@ -169,6 +171,9 @@ All core functions are defined in **bobbeltank.core.js**. Its documentation can 
 Handles the Entity-Objects for you. Here you can set simulator entities, find entities or change global entity parameters.
 
 * ```EntityCollection.setEntities(input_entities, input_sensors)``` Sets simulator entities to ```input_entities``` having ```input_senors```. The *inputs* have to look like defined in **properties.js**
+* ```EntityCollection.addEntity(input_entity, input_sensors)``` Adds single entity (single *input_entity* object) to end of entity list. Additionally returns a reference to new generated Entity-Object.
+* ```EntityCollection.removeEntityAtIndex(index)``` Removes Entity at given Index from List (use in finalization step)
+* ```EntityCollection.removeEntityWithUUID(uuid)``` Removes Entity having given UUID from List (use in finalization step)
 * ```EntityCollection.getEntities()``` Returns the list of entities currently used by the simulator
 * ```EntityCollection.getPositions()``` Returns a list only containing the positions of entities used by the simulator
 * ```EntityCollection.getEntityByIndex(index)``` Returns the entity at *index* position in the list used by simulator
