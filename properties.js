@@ -8,7 +8,7 @@
  * Every Bobbel can have the following properties:
  *
  *  name is a name you define
- *  image an image path to a small round image
+ *  image an image path to a small round image (the default bubble is from https://www.freeiconspng.com/img/44340)
  *  position start coordinates
  *  direction direction of bobbel 0-360 degree. 0 is looking along x-axis, 90 along y-axis etc...
  *  color displays a colored ring around a bobbel
