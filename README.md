@@ -62,8 +62,10 @@ To define Sensors **properties.js** contains another variable (this time an obje
 	    }, ...
 	};
 	
-Sensors can have a color and need a perimeter. Perimeter define the sensed area around an entity at position (0,0) facing in X-Direction. ![](doc/sensor_polygon.png)
+Sensors can have a color and need a perimeter. Perimeter define the sensed area around an entity at position (0,0) facing in X-Direction.
 **It is very important, that you define a "simple" polygon having no edges crossing each other!**
+
+![](doc/sensor_polygon.png)
 
 Further you can define some properties of the simulation environment. These are placed in
 
