@@ -122,6 +122,7 @@ var Tank = {
      */
     displayPerception: function(sensorPolygon, color){
         if (!Tank.enabled) return;
+        if (!color) return;
 
         var ctx = Tank.scratch_canvas_ctx;
         ctx.beginPath();
