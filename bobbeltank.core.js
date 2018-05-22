@@ -1,6 +1,10 @@
 'use strict';
 
 /**
+ * @author Robin Nicolay <robin.nicolay@uni-rostock.de>
+ */
+
+/**
  * ------------------------------
  * FUNCTIONS, CONTROLLER, MODEL
  * ------------------------------

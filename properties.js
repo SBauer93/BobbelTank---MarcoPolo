@@ -2,6 +2,10 @@
 'use strict';
 
 /**
+ * @author Robin Nicolay <robin.nicolay@uni-rostock.de>
+ */
+
+/**
  * List of Bobbel entities
  * [{bobbel_1},{bobbel_2},{bobbel_3},...]
  *
@@ -50,7 +54,17 @@ var bobbel_entities =
         }, {
             name: "Captain Bobbel",
             image: "images/150x150_bubble.png",
-            color: "green",
+            color: "red",
+            perceptions : ["see", "hear", "feel"]
+        }, {
+            name: "Spock Bobbel",
+            image: "images/150x150_bubble.png",
+            color: "blue",
+            perceptions : ["see", "hear", "feel"]
+        }, {
+            name: "O'Brian Bobbel",
+            image: "images/150x150_bubble.png",
+            color: "yellow",
             perceptions : ["see", "hear", "feel"]
         }
     ];

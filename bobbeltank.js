@@ -2,6 +2,10 @@
 'use strict';
 
 /**
+ * @author Robin Nicolay <robin.nicolay@uni-rostock.de>
+ */
+
+/**
  * Called once after Program loaded or if "Restart" pressed
  * Adds Entities defined in properties.js to Simulator
  *      EntityCollection.setEntities(bobbel_entities, bobbel_sensors);
@@ -93,6 +97,12 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             entity.rotate(-10);
         }
         entity.move(1);
+    } else {
+        if (Math.random() > 0.5) {
+            entity.rotate(90);
+        } else {
+            entity.rotate(-90);
+        }
     }
 
     Tank.displayEntity(entity); // adds updated entity to Tank visualisation
