@@ -1,3 +1,5 @@
+/* global simulator_parameters, PolyK */
+
 'use strict';
 
 /**
@@ -23,7 +25,7 @@
  * @namespace
  */
 var Tank = {
-
+    
     visible_canvas: null,
     visible_canvas_ctx : null,
     scratch_canvas: null,
@@ -419,7 +421,7 @@ var Log = {
 
         window.onerror = function(message, source, lineno, colno, error){
             Log.error('In line ' + lineno + ' of ' + (source.replace(/^.*[\\\/]/, '')) + '\n -> ' + error + '\n -> (' + message + ')', 60);
-        }
+        };
 
         console.log('Redirected console.log to Log.debug');
 
@@ -516,7 +518,7 @@ var Log = {
         else time *= 1000;
 
         setTimeout(function(){
-            logEntry.fadeOut(2000, function(){logEntry.remove()});
+            logEntry.fadeOut(2000, function(){logEntry.remove();});
         }, time);
     }
 };
@@ -669,11 +671,10 @@ var EntityCollection = {
      *
      * @param own_pos position of Entity-Object itself. (Would perceive itself otherwise)
      * @param polyk_polygons_object sensor polygon in polyk format provided by Entity
-     * @param perceivable_positions list of positions that can be perceived if inside sensor polygon
      * @returns {null} perceived object {sensorname_1: [list_of_perceived_entities],sensorname_2: [list_of_perceived_entities],..} or null if empty
      */
     getPerceivedEntities: function(own_pos, polyk_polygons_object) {
-        var perceivable_positions = EntityCollection.getPositions()
+        var perceivable_positions = EntityCollection.getPositions();
 
         var perceptions = {};
         for (var sensor_tag in polyk_polygons_object){
@@ -762,7 +763,7 @@ function Entity(entity_object, sensors_object) {
     this.color = entity_object['color'];
 
     //only sets position if input pos is array with length 2
-    var pos = entity_object['position']
+    var pos = entity_object['position'];
     if (Array.isArray(pos) && pos.length === 2) {
         this.posX = pos[0];
         this.posY = pos[1];
@@ -920,7 +921,7 @@ Entity.prototype.toString = function(){
 Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
     angle = angle * Math.PI / 180.0;
     return [Math.cos(angle) * (pointX-originX) - Math.sin(angle) * (pointY-originY) + originX,
-        Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY]
+        Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY];
 };
 
 

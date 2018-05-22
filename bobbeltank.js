@@ -1,3 +1,5 @@
+/* global EntityCollection, bobbel_sensors, bobbel_entities, Log, Tank, Simulator, Entity */
+
 //TIP: If you disable caching in webbrowser. Live.js reloads page on any changes of these files automatically
 'use strict';
 

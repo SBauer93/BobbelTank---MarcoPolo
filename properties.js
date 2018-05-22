@@ -115,9 +115,6 @@ var bobbel_sensors = {
 };
 
 
-
-
-
 /**
  * Parameters for simulator
  * You can define your own background image, set entities movement limitations or define log level (debug, info, error)
