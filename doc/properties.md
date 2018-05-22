@@ -6,7 +6,7 @@
 [{bobbel_1},{bobbel_2},{bobbel_3},...]</p>
 <p>Every Bobbel can have the following properties:</p>
 <p> name is a name you define
- image an image path to a small round image
+ image an image path to a small round image (the default bubble is from <a href="https://www.freeiconspng.com/img/44340">https://www.freeiconspng.com/img/44340</a>)
  position start coordinates
  direction direction of bobbel 0-360 degree. 0 is looking along x-axis, 90 along y-axis etc...
  color displays a colored ring around a bobbel
@@ -48,7 +48,7 @@ If not limited the entities don&#39;t stop at simulators borders</p>
 <a name="bobbel_entities"></a>
 
 ## bobbel_entities
-List of Bobbel entities[{bobbel_1},{bobbel_2},{bobbel_3},...]Every Bobbel can have the following properties: name is a name you define image an image path to a small round image position start coordinates direction direction of bobbel 0-360 degree. 0 is looking along x-axis, 90 along y-axis etc... color displays a colored ring around a bobbel perception list of sensor-tags defined in bobbel_sensors example     {          name: "Malotzki",          image: "images/150x150_bubble.png",          color: "cyan",          position : [10,80],          perceptions : ["pirate"],          direction : 20      }
+List of Bobbel entities[{bobbel_1},{bobbel_2},{bobbel_3},...]Every Bobbel can have the following properties: name is a name you define image an image path to a small round image (the default bubble is from https://www.freeiconspng.com/img/44340) position start coordinates direction direction of bobbel 0-360 degree. 0 is looking along x-axis, 90 along y-axis etc... color displays a colored ring around a bobbel perception list of sensor-tags defined in bobbel_sensors example     {          name: "Malotzki",          image: "images/150x150_bubble.png",          color: "cyan",          position : [10,80],          perceptions : ["pirate"],          direction : 20      }
 
 **Kind**: global variable  
 <a name="bobbel_sensors"></a>

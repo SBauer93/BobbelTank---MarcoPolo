@@ -385,7 +385,7 @@ Handles all Entities in the system. Some kind of entity database where the bobbe
     * [.clearMovementBounds()](#EntityCollection.clearMovementBounds)
     * [.getEntities()](#EntityCollection.getEntities) ⇒ <code>Array</code>
     * [.getPositions()](#EntityCollection.getPositions) ⇒ <code>Array</code>
-    * [.getPerceivedEntities(own_pos, polyk_polygons_object, perceivable_positions)](#EntityCollection.getPerceivedEntities) ⇒ <code>null</code>
+    * [.getPerceivedEntities(own_pos, polyk_polygons_object)](#EntityCollection.getPerceivedEntities) ⇒ <code>null</code>
     * [.getEntityByIndex(index)](#EntityCollection.getEntityByIndex) ⇒ <code>\*</code>
     * [.getEntityByUUID(uuid)](#EntityCollection.getEntityByUUID) ⇒ <code>\*</code>
 
@@ -471,7 +471,7 @@ Returns list of positions for all entities [[x,y],[x,y],[x,y],...]
 **Kind**: static method of [<code>EntityCollection</code>](#EntityCollection)  
 <a name="EntityCollection.getPerceivedEntities"></a>
 
-### EntityCollection.getPerceivedEntities(own_pos, polyk_polygons_object, perceivable_positions) ⇒ <code>null</code>
+### EntityCollection.getPerceivedEntities(own_pos, polyk_polygons_object) ⇒ <code>null</code>
 Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
 
 polyk_polygons_object
@@ -488,7 +488,6 @@ polyk_polygons_object
 | --- | --- |
 | own_pos | position of Entity-Object itself. (Would perceive itself otherwise) |
 | polyk_polygons_object | sensor polygon in polyk format provided by Entity |
-| perceivable_positions | list of positions that can be perceived if inside sensor polygon |
 
 <a name="EntityCollection.getEntityByIndex"></a>
 
