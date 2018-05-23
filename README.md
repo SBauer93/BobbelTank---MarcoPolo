@@ -62,7 +62,7 @@ To define Sensors **properties.js** contains another variable (this time an obje
 	    }, ...
 	};
 	
-Sensors can have a color and need a perimeter. Perimeter define the sensed area around an entity at position (0,0) facing in X-Direction.
+Sensors can have a color and need a perimeter. Perimeter define the sensed area around an entity at position (0,0) facing in X-Direction. If you don't define a color. The Sensor is invisible (but there)
 **It is very important, that you define a "simple" polygon having no edges crossing each other!**
 
 ![](doc/sensor_polygon.png)
@@ -101,16 +101,18 @@ The next function is called during simulation once for every single entity.
 
 	var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
 	
-	    if (perceptions) {
-	        for (var sensor in perceptions) {
-	            var names = [];
+		if (perceptions) {
+	        for (var sensor in perceptions) { 
+	            var perception_log = [];
 	            for (var index in perceptions[sensor]){
-	                names.push(perceptions[sensor][index]['name']);
+	                perception_log.push(("(" + perceptions[sensor][index]['entity']['name']
+	                + " dist " + Math.round(perceptions[sensor][index]['distance'])
+	                + " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
 	            }
+	            Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
 	        }
-	        Log.debug(entity.name + " " + sensor + "'s [" + names+']' , 3, entity.uuid+sensor);
 	    }
-	
+
 	    if (!perceptions) {
 	        if (Math.random() > 0.5) {
 	            entity.rotate(10);
@@ -118,6 +120,12 @@ The next function is called during simulation once for every single entity.
 	            entity.rotate(-10);
 	        }
 	        entity.move(1);
+	    } else {
+	        if (Math.random() > 0.5) {
+	            entity.rotate(90);
+	        } else {
+	            entity.rotate(-90);
+	        }
 	    }
 	    
 	    Tank.displayEntity(entity); // <- paints entity to scratch canvas
@@ -158,11 +166,40 @@ If you want to store other information in a property during simulation, just use
 * ```restrictedYmax``` number if movement restricted. null else
 * ```polyk_sensor_polygons``` same object as sensor_polygons but in other format needed by library PolyK. PolyK is included in this project and helps with polygon-functions documented on their [website](http://polyk.ivank.net/?p=documentation).
 
-### Functions
+### Object-Methods
+These are the methods available in the Entity-Object.
+
 * ```entity.move(distance_in_px)``` moves towards current direction and updates sensor_polygons
 * ```entity.rotate(degree)``` (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
 * ```entity.updateSensors()``` if you change posX, posY or direction yourself this updates sensorpolygons for you
 * ```entity.toString()``` overrides default string output method providing some debug info if necessary
+* ```entity.getPerceptions(pos_list, obj_list)``` Determines for positions if they are perceived by entities Sensors. If position at index is perceived it returns object with index from obj_list, position, distance, direction ...
+
+#### Perception-Object
+The Perception-Object is returned by the ```getPerceptions``` method. It maps *sensor_tags* to lists of perception objects. Perception objects contain the position, direction, distance and reference to perceived object. If there is absolutely no perception ```getPerceptions``` returns ```null``` instead of this object.
+	
+	{
+		sensor_tag_1: [				// "see"
+			{
+				position: [x, y],	// position of seen Entity-Object (from pos_list[i])
+				distance: 123,		//	distance to seen Entity-Object
+				direction: 45,		// direction to seen Entity-Object (0 is exactly in front of Entity)
+				entity: { ... }		// reference to (Entity-)Object (from obj_list[i])
+			},
+			{
+				position : ...		// another seen Entity-Object ...
+			}, ..
+		], 
+		sensor_tag_2: [ ... ],		// another sensor_tag ("hear" .. etc.)
+		...
+	}
+
+
+### Static-Functions (helpers)
+* ```Entity.__rotateAroundOrigin(x, y, originX, originY, angle)``` returns rotated point with x,y around origin
+* ```Entity.__distanceBetweenTwoPoints(x1, y1, x2, y2)``` returns distance between two points
+* ```Entity.__angleBetweenPoints(x1, y1, x2, y2)``` returns direction between xy1 and xy2 in degrees
+* ```Entity.__pointInPolygon(x, y, polygon)``` returns true if x,y are inside polygon [[x,y],[x,y],...]
 
 ## Core functions you can use
 All core functions are defined in **bobbeltank.core.js**. Its documentation can be found here [here](doc/bobbeltank.core.md). Just a brief overview about the most important ones.
@@ -177,7 +214,6 @@ Handles the Entity-Objects for you. Here you can set simulator entities, find en
 * ```EntityCollection.getEntities()``` Returns the list of entities currently used by the simulator
 * ```EntityCollection.getPositions()``` Returns a list only containing the positions of entities used by the simulator
 * ```EntityCollection.getEntityByIndex(index)``` Returns the entity at *index* position in the list used by simulator
-* ```EntityCollection.getPerceivedEntities(excluded_pos, object_with_polyk_polygons)``` Returns all perceived entities based on their positions. Excluded_pos should be the own positon (not perceive yourself) and a set of sensor polygons. Entity-Objects calculate their *polyk_polygons* based on position and given sensor perimeters. The *object* maps sensor-tags to corresponding polygons. **For correct perceptions make sure, sensor-polygons do not have crossing edges!**
 * ```EntityCollection.getEntityByUUID(uuid)``` Every Entity-Object has its own unique ID. Returns an entity having this unique id. 
 
 ### Tank

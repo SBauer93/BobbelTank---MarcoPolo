@@ -95,7 +95,7 @@ var bobbel_entities =
  *  perimeter   defines the sensor polygon (list of points) around an entity
  *              The entity can be seen at position (0,0) Looking to direction 0 (along x-axis)
  *              All points defined for sensor polygon are in relation to this entity
- *  color       in which sensor is displayed
+ *  color       in which sensor is displayed. If no color is defined sensor is invisible (but active)
  *
  *      see: {                                         // sensor has tag see
  *          perimeter: [[0,0], [40,20], [40,-20]],     // spans a triangle from entity (0,0) forward to X 40 and span -20 to 20
