@@ -34,16 +34,32 @@ Adds Entities defined in properties.js to Simulator
                                  See (http://polyk.ivank.net/?p=documentation) for documentation
      }
 
-   Entity has included functions helping you to move and rotate an entity
+   Entity has included functions helping you to move and rotate an Entity-Object
 
      entity.move(distance_in_px) // moves towards current direction and updates sensor_polygons
      entity.rotate(degree)       // (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
      entity.updateSensors()      // if you change posX, posY or direction yourself this updates sensorpolygons for you
+     entity.getPerceptions(pos_list, obj_list) // Determines for positions if they are perceived by entity. Returns object with same index from obj_list, position, distance, direction ...
      entity.toString()           // overrides default string output method providing some debug info if necessary
+
+   Entity has included static functions helping you to perform some coordinate calculations
+
+     Entity.__rotateAroundOrigin(x, y, originX, originY, angle)      // returns rotated point with x,y around origin
+     Entity.__distanceBetweenTwoPoints(x1, y1, x2, y2)               // returns distance between two points
+     Entity.__angleBetweenPoints(x1, y1, x2, y2)                     // returns direction between xy1 and xy2 in degrees
+     Entity.__pointInPolygon(x, y, polygon)                          // returns true if x,y are inside polygon [[x,y],[x,y],...]
 </code></pre><p>Perceptions-Object looks like this</p>
 <pre><code>     {
          sensortag_1: [perceived_entity_object_1, perceived_entity_object_2, perceived_entity_object_3, ...],
          sensortag_2: ...
+     }
+
+with perceived_entity_object_n
+     {
+         position: [x,y],
+         distance: number,
+         orientation: number in relation to own position
+         entity: {...} reference to perceived entity
      }
 </code></pre></dd>
 <dt><a href="#perform_simulation_step_finalization">perform_simulation_step_finalization(entity_list, step_count, duration)</a></dt>
@@ -101,20 +117,34 @@ Entity's states are contained in it's properties. You can read and persistently 
                                      See (http://polyk.ivank.net/?p=documentation) for documentation
          }
 
-       Entity has included functions helping you to move and rotate an entity
+       Entity has included functions helping you to move and rotate an Entity-Object
 
          entity.move(distance_in_px) // moves towards current direction and updates sensor_polygons
          entity.rotate(degree)       // (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
          entity.updateSensors()      // if you change posX, posY or direction yourself this updates sensorpolygons for you
+         entity.getPerceptions(pos_list, obj_list) // Determines for positions if they are perceived by entity. Returns object with same index from obj_list, position, distance, direction ...
          entity.toString()           // overrides default string output method providing some debug info if necessary
-
-
+         
+       Entity has included static functions helping you to perform some coordinate calculations
+       
+         Entity.__rotateAroundOrigin(x, y, originX, originY, angle)      // returns rotated point with x,y around origin
+         Entity.__distanceBetweenTwoPoints(x1, y1, x2, y2)               // returns distance between two points
+         Entity.__angleBetweenPoints(x1, y1, x2, y2)                     // returns direction between xy1 and xy2 in degrees
+         Entity.__pointInPolygon(x, y, polygon)                          // returns true if x,y are inside polygon [[x,y],[x,y],...]
 
 Perceptions-Object looks like this
 
          {
              sensortag_1: [perceived_entity_object_1, perceived_entity_object_2, perceived_entity_object_3, ...],
              sensortag_2: ...
+         }
+
+    with perceived_entity_object_n
+         {
+             position: [x,y],
+             distance: number,
+             orientation: number in relation to own position
+             entity: {...} reference to perceived entity
          }
 
 **Kind**: global function  

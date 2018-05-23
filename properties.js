@@ -36,7 +36,16 @@ var bobbel_entities =
         {
             name: "Wilson",
             image: "images/150x150_bubble.png",
-            perceptions : ["see", "hear"],
+            position: [20, 20],
+            direction: 0,
+            perceptions : ["see", "hear", "feel"],
+            color: "black"
+        }, {
+            name: "Mouse",
+            image: "images/150x150_bubble.png",
+            position: [35, 22],
+            direction: 0,
+            perceptions : [],
             color: "black"
         }, {
             name: "Malotzki",
@@ -97,7 +106,7 @@ var bobbel_entities =
 var bobbel_sensors = {
 
     see: {
-        perimeter: [[0,0], [50,20], [50,-20]],
+        perimeter: [[0,0], [50,-20], [50,20]],
         color : "orange"
     },
     hear: {

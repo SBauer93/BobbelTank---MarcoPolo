@@ -315,11 +315,8 @@ var Simulator = {
         // simulation step for every single entity...
         for (var entity_i in entities){
             var entity = entities[entity_i];
-
-            var perceptions = EntityCollection.getPerceivedEntities(
-                [entity.posX, entity.posY],
-                entity.polyk_sensor_polygons);
-
+            var perceptions = entity.getPerceptions(EntityCollection.getPositions(), EntityCollection.getEntities());
+            
             perform_simulation_step_on_entity(entity, perceptions, Simulator.__step_count);
         }
 
@@ -894,6 +891,72 @@ Entity.prototype.updateSensors = function(){
 };
 
 /**
+ * Calculates perceptions of entity according to a list of perceivable object positions
+ * Returns and object mapping sensor names to list of perceptions.
+ *
+ * If nothing is perceived returns null
+ *
+ * perceptions
+ *      {
+ *          sensorname_1: [
+ *              {
+ *                  "entity": //reference to perceived object
+ *                  "position" // position of perceived object
+ *                  "distance" // distance to perceived object
+ *                  "direction" // direction to perceived object (corresponding to own direction)
+ *              }, {
+ *                  ...
+ *              }, 
+ *              ...
+ *          ],
+ *          sensorname_2: [...],
+ *          ...
+ *      }
+ *
+ */
+Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivable_objects_list) {
+    if (perceivable_positions_list.length !== perceivable_objects_list.length) {
+        Log.error("Can not calculate perceptions for " + this.name + " \n" +
+            "perceivable_positions_list must have same length as perceivable_objects_list \n" +
+            "have " + perceivable_positions_list.length + " positions and " + perceivable_objects_list + " objects in EntityCollection");
+        return;
+    }
+
+    var sensor_polygons = this.sensor_polygons;
+    var perceptions = {};
+
+    for (var sensor_tag in sensor_polygons){
+        var sensor_polygon = sensor_polygons[sensor_tag];
+        for (var pos_i in perceivable_positions_list) {
+            var position = perceivable_positions_list[pos_i];
+            if (position[0] === this.posX && position[1] === this.posY) {
+                continue; //skip self
+            }
+
+            if (Entity.__pointInPolygon(position[0], position[1], sensor_polygon)){
+                if (!perceptions[sensor_tag]){
+                    perceptions[sensor_tag] = [];
+                }
+
+                var perception = {
+                    position: position,
+                    distance: Entity.__distanceBetweenTwoPoints(this.posX, this.posY, position[0], position[1]),
+                    direction: (this.direction - Entity.__angleBetweenPoints(this.posX, this.posY, position[0], position[1])),
+                };
+                perception['entity'] = perceivable_objects_list[pos_i];
+                perceptions[sensor_tag].push(perception);
+            }
+        }
+    }
+
+    if (Object.keys(perceptions).length) {
+        return perceptions;
+    } else {
+        return null;
+    }
+},
+
+/**
  * Overrides default string output for Entity class
  * @returns {string}
  */
@@ -924,11 +987,51 @@ Entity.__rotateAroundOrigin = function(pointX, pointY, originX, originY, angle){
         Math.sin(angle) * (pointX-originX) + Math.cos(angle) * (pointY-originY) + originY];
 };
 
+/**
+ * Static Helper function
+ * Calculates and returns distance between two points (pytagoras)
+ * @param posX1
+ * @param posY1
+ * @param posX2
+ * @param posY2
+ * @returns {number}
+ * @private
+ */
+Entity.__distanceBetweenTwoPoints = function(posX1, posY1, posX2, posY2) {
+    var a = posX1 - posX2;
+    var b = posY1 - posY2;
+    return Math.sqrt( a*a + b*b );
+};
 
+/**
+ * Static Helper function
+ * Returns Angle between two points and x-Axis (similar to direction)
+ * @param posX1
+ * @param posY1
+ * @param posX2
+ * @param posY2
+ * @returns {number} angle in degrees
+ * @private
+ */
+Entity.__angleBetweenPoints = function(posX1, posY1, posX2, posY2) {
+    return Math.atan2(posY2 - posY1, posX2 - posX1) * 180 / Math.PI;
+};
 
+Entity.__pointInPolygon = function(posX, posY, polygonArray) {
+    var x = posX, y = posY;
+    var vs = polygonArray;
 
+    var inside = false;
+    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        var xi = vs[i][0], yi = vs[i][1];
+        var xj = vs[j][0], yj = vs[j][1];
 
-
+        var intersect = ((yi > y) != (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+};
 
 /**
  * End of class definitions

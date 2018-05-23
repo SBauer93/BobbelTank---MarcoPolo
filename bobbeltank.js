@@ -60,20 +60,34 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
  *                                      See (http://polyk.ivank.net/?p=documentation) for documentation
  *          }
  *
- *        Entity has included functions helping you to move and rotate an entity
+ *        Entity has included functions helping you to move and rotate an Entity-Object
  *
  *          entity.move(distance_in_px) // moves towards current direction and updates sensor_polygons
  *          entity.rotate(degree)       // (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
  *          entity.updateSensors()      // if you change posX, posY or direction yourself this updates sensorpolygons for you
+ *          entity.getPerceptions(pos_list, obj_list) // Determines for positions if they are perceived by entity. Returns object with same index from obj_list, position, distance, direction ...
  *          entity.toString()           // overrides default string output method providing some debug info if necessary
- *
- *
+ *          
+ *        Entity has included static functions helping you to perform some coordinate calculations
+ *        
+ *          Entity.__rotateAroundOrigin(x, y, originX, originY, angle)      // returns rotated point with x,y around origin
+ *          Entity.__distanceBetweenTwoPoints(x1, y1, x2, y2)               // returns distance between two points
+ *          Entity.__angleBetweenPoints(x1, y1, x2, y2)                     // returns direction between xy1 and xy2 in degrees
+ *          Entity.__pointInPolygon(x, y, polygon)                          // returns true if x,y are inside polygon [[x,y],[x,y],...]
  *
  * Perceptions-Object looks like this
  *
  *          {
  *              sensortag_1: [perceived_entity_object_1, perceived_entity_object_2, perceived_entity_object_3, ...],
  *              sensortag_2: ...
+ *          }
+ *
+ *     with perceived_entity_object_n
+ *          {
+ *              position: [x,y],
+ *              distance: number,
+ *              orientation: number in relation to own position
+ *              entity: {...} reference to perceived entity
  *          }
  *
  * @param entity reference to current entity object
@@ -84,12 +98,14 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
     if (perceptions) {
         for (var sensor in perceptions) {
-            var names = [];
+            var perception_log = [];
             for (var index in perceptions[sensor]){
-                names.push(perceptions[sensor][index]['name']);
+                perception_log.push(("(" + perceptions[sensor][index]['entity']['name']
+                + " dist " + Math.round(perceptions[sensor][index]['distance'])
+                + " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
             }
+            Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
-        Log.debug(entity.name + " " + sensor + "'s [" + names+']' , 3, entity.uuid+sensor);
     }
 
     if (!perceptions) {
