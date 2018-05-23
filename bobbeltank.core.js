@@ -891,12 +891,12 @@ Entity.prototype.updateSensors = function(){
 };
 
 /**
- * Calculates perceptions of entity according to a list of perceivable object positions
- * Returns and object mapping sensor names to list of perceptions.
- *
+ * Returns perceptions of Entitie's sensors. 
+ * It needs two lists with same length. Based on a list of perceivable positions it returns object with same index
  * If nothing is perceived returns null
  *
  * perceptions
+ *      
  *      {
  *          sensorname_1: [
  *              {
@@ -912,7 +912,10 @@ Entity.prototype.updateSensors = function(){
  *          sensorname_2: [...],
  *          ...
  *      }
- *
+ *      
+ * @param {array} perceivable_positions_list list of perceivable positions
+ * @param {array} perceivable_objects_list  list of objects at these positions
+ * @returns {String}
  */
 Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivable_objects_list) {
     if (perceivable_positions_list.length !== perceivable_objects_list.length) {
