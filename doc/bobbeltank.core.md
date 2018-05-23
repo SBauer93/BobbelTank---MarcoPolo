@@ -41,6 +41,7 @@
     * [.rotate(degrees)](#Entity+rotate)
     * [.setMovementBounds(minX, minY, maxX, maxY)](#Entity+setMovementBounds)
     * [.updateSensors()](#Entity+updateSensors)
+    * [.getPerceptions(perceivable_positions_list, perceivable_objects_list)](#Entity+getPerceptions) ⇒ <code>String</code>
     * [.toString()](#Entity+toString) ⇒ <code>string</code>
 
 <a name="new_Entity_new"></a>
@@ -117,6 +118,38 @@ Restricts movement of entities to these coordinates. (Verified in move() and upd
 Updates entities sensor_polygons etc. according to position and direction properties
 
 **Kind**: instance method of [<code>Entity</code>](#Entity)  
+<a name="Entity+getPerceptions"></a>
+
+### entity.getPerceptions(perceivable_positions_list, perceivable_objects_list) ⇒ <code>String</code>
+Returns perceptions of Entitie's sensors. 
+It needs two lists with same length. Based on a list of perceivable positions it returns object with same index
+If nothing is perceived returns null
+
+perceptions
+     
+     {
+         sensorname_1: [
+             {
+                 "entity": //reference to perceived object
+                 "position" // position of perceived object
+                 "distance" // distance to perceived object
+                 "direction" // direction to perceived object (corresponding to own direction)
+             }, {
+                 ...
+             }, 
+             ...
+         ],
+         sensorname_2: [...],
+         ...
+     }
+
+**Kind**: instance method of [<code>Entity</code>](#Entity)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| perceivable_positions_list | <code>array</code> | list of perceivable positions |
+| perceivable_objects_list | <code>array</code> | list of objects at these positions |
+
 <a name="Entity+toString"></a>
 
 ### entity.toString() ⇒ <code>string</code>

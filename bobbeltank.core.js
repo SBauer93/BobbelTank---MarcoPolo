@@ -944,7 +944,7 @@ Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivab
                 var perception = {
                     position: position,
                     distance: Entity.__distanceBetweenTwoPoints(this.posX, this.posY, position[0], position[1]),
-                    direction: (this.direction - Entity.__angleBetweenPoints(this.posX, this.posY, position[0], position[1])),
+                    direction: (this.direction - Entity.__angleBetweenPoints(this.posX, this.posY, position[0], position[1]))
                 };
                 perception['entity'] = perceivable_objects_list[pos_i];
                 perceptions[sensor_tag].push(perception);
@@ -957,7 +957,7 @@ Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivab
     } else {
         return null;
     }
-},
+};
 
 /**
  * Overrides default string output for Entity class
