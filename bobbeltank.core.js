@@ -273,9 +273,11 @@ var Simulator = {
     __interval_ref: null,   // active interval instance is placed here
     __interval_ms: 500,     // currently set milliseconds between steps
     __step_count: 0,        // current step count
+    __busy: false,          // simulator busy step. prevents new interval execution if still busy
 
     init : function(){
         Log.debug('Simulator ready');
+        Simulator.__busy = false;
     },
 
     /**
@@ -296,6 +298,7 @@ var Simulator = {
         if (Simulator.__interval_ref) clearInterval(Simulator.__interval_ref);
         Simulator.__interval_ref = null;
         Simulator.__interval_ms = -1;
+        Simulator.__busy = false;
     },
 
     /**
@@ -306,6 +309,10 @@ var Simulator = {
      * ****************************************
      */
     performStep: function(){
+
+        if (Simulator.__busy) return;
+
+        Simulator.__busy = true;
 
         var begin = new Date();
         var entities = EntityCollection.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
@@ -325,6 +332,7 @@ var Simulator = {
 
         Tank.flush();
         Simulator.__step_count++;
+        Simulator.__busy = false;
     }
 };
 
@@ -654,48 +662,6 @@ var EntityCollection = {
             positions.push([EntityCollection.__entities[i]['posX'], EntityCollection.__entities[i]['posY']]);
         }
         return positions;
-    },
-
-    /**
-     * Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
-     *
-     * polyk_polygons_object
-     *      {
-     *          sensorname_1: [polyk_coords],
-     *          sensorname_2: [polyk_coords],
-     *          sensorname_n: [polyk_coords]
-     *      }
-     *
-     * @param own_pos position of Entity-Object itself. (Would perceive itself otherwise)
-     * @param polyk_polygons_object sensor polygon in polyk format provided by Entity
-     * @returns {null} perceived object {sensorname_1: [list_of_perceived_entities],sensorname_2: [list_of_perceived_entities],..} or null if empty
-     */
-    getPerceivedEntities: function(own_pos, polyk_polygons_object) {
-        var perceivable_positions = EntityCollection.getPositions();
-
-        var perceptions = {};
-        for (var sensor_tag in polyk_polygons_object){
-            var polyk_polygon = polyk_polygons_object[sensor_tag];
-            for (var pos_i in perceivable_positions) {
-                var position = perceivable_positions[pos_i];
-                if (position[0] === own_pos[0] && position[1] === own_pos[1])
-                    continue; //skip self
-
-                if (PolyK.ContainsPoint(polyk_polygon, position[0], position[1])){
-                    var perceivedEntity = EntityCollection.getEntityByIndex(pos_i);
-                    if (!perceptions[sensor_tag]){
-                        perceptions[sensor_tag] = [];
-                    }
-                    perceptions[sensor_tag].push(perceivedEntity);
-                }
-            }
-        }
-
-        if (Object.keys(perceptions).length) {
-            return perceptions;
-        } else {
-            return null;
-        }
     },
 
     /**

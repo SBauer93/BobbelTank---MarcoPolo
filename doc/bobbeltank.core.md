@@ -418,7 +418,6 @@ Handles all Entities in the system. Some kind of entity database where the bobbe
     * [.clearMovementBounds()](#EntityCollection.clearMovementBounds)
     * [.getEntities()](#EntityCollection.getEntities) ⇒ <code>Array</code>
     * [.getPositions()](#EntityCollection.getPositions) ⇒ <code>Array</code>
-    * [.getPerceivedEntities(own_pos, polyk_polygons_object)](#EntityCollection.getPerceivedEntities) ⇒ <code>null</code>
     * [.getEntityByIndex(index)](#EntityCollection.getEntityByIndex) ⇒ <code>\*</code>
     * [.getEntityByUUID(uuid)](#EntityCollection.getEntityByUUID) ⇒ <code>\*</code>
 
@@ -502,26 +501,6 @@ Returns list of entity objects [{entity_1},{entity_2},{entity_3},...]
 Returns list of positions for all entities [[x,y],[x,y],[x,y],...]
 
 **Kind**: static method of [<code>EntityCollection</code>](#EntityCollection)  
-<a name="EntityCollection.getPerceivedEntities"></a>
-
-### EntityCollection.getPerceivedEntities(own_pos, polyk_polygons_object) ⇒ <code>null</code>
-Gets set of perception polygons (have to be in wired polyk format provided by Entity-Object)
-
-polyk_polygons_object
-     {
-         sensorname_1: [polyk_coords],
-         sensorname_2: [polyk_coords],
-         sensorname_n: [polyk_coords]
-     }
-
-**Kind**: static method of [<code>EntityCollection</code>](#EntityCollection)  
-**Returns**: <code>null</code> - perceived object {sensorname_1: [list_of_perceived_entities],sensorname_2: [list_of_perceived_entities],..} or null if empty  
-
-| Param | Description |
-| --- | --- |
-| own_pos | position of Entity-Object itself. (Would perceive itself otherwise) |
-| polyk_polygons_object | sensor polygon in polyk format provided by Entity |
-
 <a name="EntityCollection.getEntityByIndex"></a>
 
 ### EntityCollection.getEntityByIndex(index) ⇒ <code>\*</code>
