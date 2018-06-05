@@ -27,10 +27,9 @@ For you mostly relevant are:
 
 If you want to use additonal core functionality like painting things, change html layout etc. you can use (and if necessary rewrite) the core-files. [Bobbeltank.core.js documentation](doc/bobbeltank.core.md)
 
-#### Two hints
+#### Tips
 
 1. **Autorefresh on file change**: This project uses [live.js](http://livejs.com). If you use a web-server such as *mamp* to host this project and deactivate our browser cache (mostly somewhere in debug mode). Page refreshes automatically if you change something
-2. **Polygon Calucation Assistance**: This project uses [PolyK](http://polyk.ivank.net). And the Entity-Objects provide their sensor polygons also automatically as polyk sensor polygons. If you do polygon calculations, you can use this library.
 
 ## How to start
 This section provides some brief steps how to start coding..
@@ -67,6 +66,17 @@ Sensors can have a color and need a perimeter. Perimeter define the sensed area 
 
 ![](doc/sensor_polygon.png)
 
+You can add perceivable edges (for walls etc.). Walls are defined in a list by a wall object containing a ```perimeter```-Array with start and endpoint, color and name.
+
+	var bobbel_walls = [
+	    {
+	        perimeter: [[120,0], [120,400]],
+	        color : "red",
+	        name: "left_wall"
+	    },{ ... }
+	];
+
+
 Further you can define some properties of the simulation environment. These are placed in
 
 	var simulator_parameters = {}
@@ -100,40 +110,12 @@ As parameters you get a entity_list. This list now contains Entity-Objects. Thes
 The next function is called during simulation once for every single entity.
 
 	var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
-	
-		if (perceptions) {
-	        for (var sensor in perceptions) { 
-	            var perception_log = [];
-	            for (var index in perceptions[sensor]){
-	                perception_log.push(("(" + perceptions[sensor][index]['entity']['name']
-	                + " dist " + Math.round(perceptions[sensor][index]['distance'])
-	                + " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
-	            }
-	            Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
-	        }
-	    }
-
-	    if (!perceptions) {
-	        if (Math.random() > 0.5) {
-	            entity.rotate(10);
-	        } else {
-	            entity.rotate(-10);
-	        }
-	        entity.move(1);
-	    } else {
-	        if (Math.random() > 0.5) {
-	            entity.rotate(90);
-	        } else {
-	            entity.rotate(-90);
-	        }
-	    }
-	    
-	    Tank.displayEntity(entity); // <- paints entity to scratch canvas
+		// do something with entity and its perceptions here
 	};
 	
-The parameters provided are the (living) Entity-Object. Its perceptions containing a object mapping sensor-tags to lists of perceived other Entity-Objects (or perceptions = null if nothing is percieved) and the step_cound for current simulation step.
+The parameters provided are the (living) current Entity-Object. You can read its properties, add new properties or use its methods to move and act with environment. A perceptions object (explained in Entity-Object below). It maps sensor-tags to lists of perceptions (or perceptions = null if nothing is percieved) and the step_cound for current simulation step.
 
-This example contains some template code with simple behavior. It outputs Log information if something is perceived. And if noting is perceived it randomly turns 10 degree left or right and moves one pixel in that direction.
+The file **bobbeltank.js** should contain some template code with simple behavior.
 
 The last function called during a simulation step can be used to clean up afterwards. It is called exactly before all painted changes are flushed to the visible canvas.
 
@@ -158,6 +140,7 @@ If you want to store other information in a property during simulation, just use
 * ```direction``` rotation of entity in degrees (0-360) 0 is along x-axis 90 along y-axis ... If changed directly call updateSensors() on entity to update polygons
 * ```sensor_colors``` object providing sensor color for every sensor. Use sensor_colors[<sensorname>] on entity
 * ```sensor_polygons``` object contains calculated sensor polygons around entity based on current position and direction Use sensor_polygons[<sensorname>] on entity
+* ```sensor_range``` Max distance of the sensor in any direction
 * ```uuid``` generated unique-id. Use to reference entity instead of name-property if you use same name for multiple entities
 * ```movementRestricted``` true if entities movement is restricted into boundaries (tank for example). false else
 * ```restrictedXmin``` number if movement restricted. null else
@@ -173,21 +156,24 @@ These are the methods available in the Entity-Object.
 * ```entity.rotate(degree)``` (0-360) rotates direction counterclockwise (-degree clockwise) and updates sensors
 * ```entity.updateSensors()``` if you change posX, posY or direction yourself this updates sensorpolygons for you
 * ```entity.toString()``` overrides default string output method providing some debug info if necessary
-* ```entity.getPerceptions(pos_list, obj_list)``` Determines for positions if they are perceived by entities Sensors. If position at index is perceived it returns object with index from obj_list, position, distance, direction ...
+* ```entity.getPerceptions(pos_list, obj_list)``` Determines for single positions and position-pairs (edges) if they are perceived by entities Sensors. If position at index is perceived it returns object with index from obj_list together with some properties depending of the perception type. Positions can contain points and edges (```[[x,y], [x,y], [[x,y],[x,y]], [x,y]]```)
 
 #### Perception-Object
-The Perception-Object is returned by the ```getPerceptions``` method. It maps *sensor_tags* to lists of perception objects. Perception objects contain the position, direction, distance and reference to perceived object. If there is absolutely no perception ```getPerceptions``` returns ```null``` instead of this object.
+The Perception-Object is returned by the ```getPerceptions``` method. It maps *sensor_tags* to lists of perception objects. Perception can be of type *Entity-Object* or *Edge-Object* and contain different addional properties and references to perceived object. If there is absolutely no perception ```getPerceptions``` returns ```null```.
 	
 	{
 		sensor_tag_1: [				// "see"
 			{
+				type: "Entity-Object" // type of perception
 				position: [x, y],	// position of seen Entity-Object (from pos_list[i])
 				distance: 123,		//	distance to seen Entity-Object
 				direction: 45,		// direction to seen Entity-Object (0 is exactly in front of Entity)
-				entity: { ... }		// reference to (Entity-)Object (from obj_list[i])
+				object: { ... }		// reference to (Entity-)Object (from obj_list[i])
 			},
 			{
-				position : ...		// another seen Entity-Object ...
+				type : "Edge-Object"		// another seen Object this time of Edge-Type
+				sensor_intersections: [[x,y],[x,y]] // intersection points of edge with edges of current sensor polygon
+				object: { ... } 			// reference to object
 			}, ..
 		], 
 		sensor_tag_2: [ ... ],		// another sensor_tag ("hear" .. etc.)
@@ -200,6 +186,13 @@ The Perception-Object is returned by the ```getPerceptions``` method. It maps *s
 * ```Entity.__distanceBetweenTwoPoints(x1, y1, x2, y2)``` returns distance between two points
 * ```Entity.__angleBetweenPoints(x1, y1, x2, y2)``` returns direction between xy1 and xy2 in degrees
 * ```Entity.__pointInPolygon(x, y, polygon)``` returns true if x,y are inside polygon [[x,y],[x,y],...]
+* ```Entity.__doEdgesIntersect(posA1, posA2, posB1, posB2)``` returns true if two edges defined by start and endpoint intersect
+* ```Entity.__getIntersectionPoint(posA1, posA2, posB1, posB2)``` returns array with [X,Y] of intersection point if two edges defined by start and endpoint intersect. Null if they do not intersect
+* ```Entity.__minDistPointToEdge(pointX, pointY, startX, startY, endX, endY)``` returns minimum distance between a point and a edge defined by start and endpoint
+
+## The Edge-Object
+Is a tiny object containing the properties ```name```, ```perimeter``` and ```color```
+Edges can be defined in **properties.js** and are maintained in **EdgeCollection** during simulation.
 
 ## Core functions you can use
 All core functions are defined in **bobbeltank.core.js**. Its documentation can be found here [here](doc/bobbeltank.core.md). Just a brief overview about the most important ones.
@@ -216,12 +209,22 @@ Handles the Entity-Objects for you. Here you can set simulator entities, find en
 * ```EntityCollection.getEntityByIndex(index)``` Returns the entity at *index* position in the list used by simulator
 * ```EntityCollection.getEntityByUUID(uuid)``` Every Entity-Object has its own unique ID. Returns an entity having this unique id. 
 
+### EdgeCollection
+Handles the Edge-Objects for you. Here you can set simulator edges, find edges...
+
+* ```EdgeCollection.setWalls(input_walls)``` Sets simulator edges to ```input_edges ```. The *inputs* have to look like defined in **properties.js**
+* ```EdgeCollection.addWall(input_edge)``` Adds single edge (single *input_edge* object) to end of edge list.
+* ```EdgeCollection.removeWallAtIndex(index)``` Removes edge at given Index from List
+* ```EdgeCollection.getEndpoints()``` Returns the list of edge endpoints currently used by the simulator [[[x,y],[x,y]],[[x,y],[x,y]],...]
+* ```EdgeCollection.getEdges()``` Returns a list containing the Edge-Objects
+
 ### Tank
 Is the object handling visualization processes. All operations are performed on a scratch or image canvas and transfered to visible canvas using Tank.flush()
 
 * ```Tank.displayEntity(Entity-Object)``` paints an entity to a scratch canvas. (Called automatically after *perform_simulation_step_on_entity()*)
-* ```Tank.displayPerception(polygon, color)``` paints (any) polygon to canvas.
-* ```Tank.displayEntityColor(color, posX, posY, radius)``` paints a colored circle around given point.
+* ```Tank.displayEdge(startPoint, endPoint, color)``` paints edge to canvas.
+* ```Tank.displayPolygon(polygon, color)``` paints (any) polygon to canvas.
+* ```Tank.displayColorRing(color, posX, posY, radius)``` paints a colored circle around given point.
 * ```Tank.displayImage(source, posX, posY, sizeX, sizeY)``` paints image to special image canvas (layer above scratch canvas)
 * ```Tank.flush()``` Cleanes visible canvas, transfers sratch to visible, transfers image to visible, clears scratch and visible.
 
