@@ -36,14 +36,14 @@ var bobbel_entities =
         {
             name: "Wilson",
             image: "images/150x150_bubble.png",
-            position: [20, 20],
+            position: [200, 200],
             direction: 0,
             perceptions : ["see", "hear", "feel"],
             color: "black"
         }, {
             name: "Mouse",
             image: "images/150x150_bubble.png",
-            position: [35, 22],
+            position: [35, 2],
             direction: 0,
             perceptions : [],
             color: "black"
@@ -122,6 +122,44 @@ var bobbel_sensors = {
         color : "orange"
     }
 };
+
+
+/**
+ * Edge definition list. Edge can be defined with perimeters start and endpoint. They are placed in environment and perceived by entities
+ *
+ *  [
+ *      {
+ *           perimeter: [[120,0], [120,400]],
+ *           color : "red",
+ *           name: "left_edge"
+ *       },
+ *      {
+ *           ...
+ *       }
+ *   ]
+ *
+ *   Every Edge has the properties perimeter (start and endpoint), color and name
+ *
+ */
+var bobbel_edges = [
+    {
+        perimeter: [[120,0], [120,400]],
+        color : "red",
+        name: "left_edge"
+    },{
+        perimeter: [[120,120], [400,200]],
+        color : "red",
+        name: "upper_edge"
+    },{
+        perimeter: [[400,200], [400,400]],
+        color : "red",
+        name: "right_edge"
+    },{
+        perimeter: [[120,400], [400,400]],
+        color : "red",
+        name: "bottom_edge"
+    }
+];
 
 
 /**

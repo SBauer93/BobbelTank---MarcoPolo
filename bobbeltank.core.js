@@ -21,7 +21,7 @@
  *  image_canvas    is a non visible canvas element. Is used during single paint operations by user and image loading processes.
  *                  Its content is transfered to visible_canvas on Tank.flush() as top layer
  *
- * @type {{visible_canvas: null, visible_canvas_ctx: null, width: number, height: number, autoSize: boolean, scratch_canvas: null, scratch_canvas_ctx: null, image_canvas: null, image_canvas_ctx: null, image_cache: {}, init: Tank.init, displayEntity: Tank.displayEntity, displayPerception: Tank.displayPerception, images_loading: number, displayImage: Tank.displayImage, flush_requested: boolean, flush: Tank.flush}}
+ * @type {{visible_canvas: null, visible_canvas_ctx: null, width: number, height: number, autoSize: boolean, scratch_canvas: null, scratch_canvas_ctx: null, image_canvas: null, image_canvas_ctx: null, image_cache: {}, init: Tank.init, displayEntity: Tank.displayEntity, displayPolygon: Tank.displayPolygon, images_loading: number, displayImage: Tank.displayImage, flush_requested: boolean, flush: Tank.flush}}
  * @namespace
  */
 var Tank = {
@@ -107,12 +107,12 @@ var Tank = {
 
         if (Tank.showPerceptions) {
             for (var sensorTag in entity.sensor_polygons){
-                Tank.displayPerception(entity.sensor_polygons[sensorTag], entity.sensor_colors[sensorTag]);
+                Tank.displayPolygon(entity.sensor_polygons[sensorTag], entity.sensor_colors[sensorTag]);
             }
         }
 
         if (Tank.showColors && entity.color){
-            Tank.displayEntityColor(entity.color, posX, posY);
+            Tank.displayColorRing(entity.color, posX, posY);
         }
 
         if (Tank.showImages) {
@@ -121,12 +121,34 @@ var Tank = {
     },
 
     /**
+     * Prints a Edge to canvas (if not prevented by Tank.show... properties)
+     * Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
+     * @param start Start point [x,y]
+     * @param end End point [x,y]
+     * @param color fill color
+     */
+    displayEdge: function(start, end, color){
+        if (!Tank.enabled) return;
+        if (!color) return;
+
+        var ctx = Tank.scratch_canvas_ctx;
+        ctx.beginPath();
+        ctx.moveTo(start[0], start[1]);
+        ctx.lineTo(end[0],end[1]);
+        ctx.lineWidth = 7;
+        ctx.strokeStyle = color;
+        ctx.stroke();
+        ctx.closePath();
+
+    },
+
+    /**
      * Prints a sensor- (or normal) Polygon to canvas (if not prevented by Tank.show... properties)
      * Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
      * @param sensorPolygon Polygon list of points [[x,y], [x,y], [x,y], ... ]
      * @param color fill color
      */
-    displayPerception: function(sensorPolygon, color){
+    displayPolygon: function(sensorPolygon, color){
         if (!Tank.enabled) return;
         if (!color) return;
 
@@ -156,7 +178,7 @@ var Tank = {
      * @param posY y-pos
      * @param radius radius of circle in px
      */
-    displayEntityColor: function(color, posX, posY, radius) {
+    displayColorRing: function(color, posX, posY, radius) {
         var ctx = Tank.image_canvas_ctx;
         ctx.beginPath();
         ctx.arc(posX, posY, radius|10, 0, 2*Math.PI, false);
@@ -311,26 +333,40 @@ var Simulator = {
     performStep: function(){
 
         if (Simulator.__busy) return;
-
         Simulator.__busy = true;
 
-        var begin = new Date();
-        var entities = EntityCollection.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
+        // display content from previous step
+        var edges_list = EdgeCollection.getEdges();
+        for (var index in edges_list) {
+            var perimeter = edges_list[index].perimeter;
+            var color = edges_list[index].color;
+            Tank.displayEdge(perimeter[0], perimeter[1] , color);
+        }
 
+        var entities = EntityCollection.getEntities(); //list of all entities [{entityObj1},{entityObj2},...]
+        for (var index in entities)
+            Tank.displayEntity(entities[index]);
+
+        var begin = new Date();
+        // perform initialization
         perform_simulation_step_initialization(entities, Simulator.__step_count);
 
         // simulation step for every single entity...
         for (var entity_i in entities){
             var entity = entities[entity_i];
-            var perceptions = entity.getPerceptions(EntityCollection.getPositions(), EntityCollection.getEntities());
+            var coordinates = EntityCollection.getPositions().concat(EdgeCollection.getEndpoints());
+            var perceivableObjects = EntityCollection.getEntities().concat(EdgeCollection.getEdges());
+            var perceptions = entity.getPerceptions(coordinates, perceivableObjects);
             
             perform_simulation_step_on_entity(entity, perceptions, Simulator.__step_count);
         }
 
         var end = new Date();
+        // cleanup
         perform_simulation_step_finalization(entities, Simulator.__step_count, end.getTime() - begin.getTime());
 
         Tank.flush();
+
         Simulator.__step_count++;
         Simulator.__busy = false;
     }
@@ -528,6 +564,55 @@ var Log = {
     }
 };
 
+
+/**
+ * Handles all edges and obstacles
+ */
+var EdgeCollection = {
+
+    __edges: [],
+
+    setEdges: function(input_edges) {
+        EdgeCollection.__edges = [];
+
+        if (!input_edges.length) {
+            Log.debug("Updated edge list to empty list");
+        }
+
+        for (var i in input_edges) {
+            EdgeCollection.addEdge(input_edges[i]);
+        }
+        Log.debug('Cleared simulator edge list and added ' + EdgeCollection.__edges.length + ' new edge elements');
+    },
+
+    addEdge: function(input_edge) {
+        if (!input_edge['perimeter'] || !input_edge['perimeter'].length === 2) {
+            Log.error("Invalid edge perimeter for " + input_edge.name + " must be length 2 with [[x1, y1],[x2, y2]]");
+            return;
+        }
+        EdgeCollection.__edges.push(new Edge(input_edge['name'], input_edge['perimeter'], input_edge['color']));
+    },
+
+    removeEdgeAtIndex: function(index){
+        if (index > -1) {
+            EdgeCollection.__edges.splice(index, 1);
+        }
+    },
+
+    getEndpoints: function() {
+        var positions = [];
+        for (var i in EdgeCollection.__edges) {
+            var edgeObj = EdgeCollection.__edges[i];
+            positions.push(EdgeCollection.__edges[i].perimeter);
+        }
+        return positions;
+    },
+
+    getEdges: function() {
+        return EdgeCollection.__edges;
+    }
+};
+
 /**
  * Handles all Entities in the system. Some kind of entity database where the bobbels live
  * @type {{__entities: Array, setEntities: EntityCollection.setEntities, getEntities: (function(): Array), getEntityByUUID: (function(*): *)}}
@@ -551,13 +636,10 @@ var EntityCollection = {
         }
 
         for (var i in input_entities) {
-            var entity_obj = EntityCollection.addEntity(input_entities[i], sensors);
-            Tank.displayEntity(entity_obj);
+            EntityCollection.addEntity(input_entities[i], sensors);
         }
 
         Log.debug('Cleared simulator entity list and added ' + input_entities.length + ' new entities');
-        Tank.flush();
-
         if (simulator_parameters['entities'] && simulator_parameters['entities']['limit_movement_to_tank_boundaries'])
             EntityCollection.setMovementBounds(0, 0, Tank.width, Tank.height);
     },
@@ -575,7 +657,7 @@ var EntityCollection = {
             && simulator_parameters['entities']['set_position_randomly_if_undefined']
             && !input_entity['position']) {
             var rand_pos = [Math.floor(Math.random() * Tank.width) + 0, Math.floor(Math.random() * Tank.height) + 0];
-            Log.debug('(Placed ' + input_entity['name'] + ' at [' + rand_pos + '])');
+            Log.debug('(Placed ' + input_entity['name'] + ' at [' + rand_pos + '])', 5);
             input_entity['position'] = rand_pos;
         }
 
@@ -584,7 +666,7 @@ var EntityCollection = {
             && simulator_parameters['entities']['set_direction_randomly_if_undefined']
             && input_entity['direction'] === undefined) {
             var rand_direct = Math.floor(Math.random() * 360) + 0;
-            Log.debug('(Rotated ' + input_entity['name'] + ' to ' + rand_direct + '°)');
+            Log.debug('(Rotated ' + input_entity['name'] + ' to ' + rand_direct + '°)', 5);
             input_entity['direction'] = rand_direct;
         }
 
@@ -595,7 +677,7 @@ var EntityCollection = {
             entity.setMovementBounds(0, 0, Tank.width, Tank.height);
 
         EntityCollection.__entities.push(entity);
-        Log.debug("Adding " + entity);
+        Log.debug("Adding " + entity, 5);
         return entity;
     },
 
@@ -692,6 +774,19 @@ var EntityCollection = {
  */
 
 /**
+ * Mini-Class definition of a edge containing properties name, perimeter and color
+ * @param name string
+ * @param perimeter array containing start and endpoint [[startX, startY][endY, endY]]
+ * @param color color of edge (invisible if undefined)
+ * @constructor
+ */
+function Edge(name, perimeter, color) {
+    this.name = name;
+    this.perimeter = perimeter;
+    this.color = color;
+}
+
+/**
  /**
  * Entity Class description. Use var foo = new Entity(entity_object, sensors_object)
  * (To reference the entity use the unique ID instead of the name)
@@ -705,6 +800,7 @@ var EntityCollection = {
  *              direction:              rotation of entity in degrees (0-360) 0 is along x-axis 90 along y-axis ... If changed directly call entity.updateSensors() to update polygons
  *              sensor_colors:          object providing sensor color for every sensor. Use entity.sensor_colors[<sensorname>]
  *              sensor_polygons:        object contains calculated sensor polygons around entity based on current position and direction Use entity.sensor_polygons[<sensorname>]
+ *              sensor_range            defines maximum distance of sensor from entity position
  *              uuid:                   generated unique-id. Use to reference entity instead of name-property if you use same name for multiple entities
  *              movementRestricted:     true if entities movement is restricted into boundaries (tank for example). false else
  *              restrictedXmin          number if movement restricted. null else
@@ -831,6 +927,7 @@ Entity.prototype.updateSensors = function(){
     var posY = this.posY;
     var direction = this.direction |0;
     var sensorDirection = this.__rotated_sensor_direction |0;
+    var sensorRange = 0;
 
     for (var sensor in this.__sensor_perimeters){
 
@@ -842,10 +939,14 @@ Entity.prototype.updateSensors = function(){
         };
 
         var sensorPolygon = this.__rotated_sensor_perimeters[sensor].map(function(polyEdge, index){
-            return [polyEdge[0]+posX, polyEdge[1]+posY]; //move to point
+            var sensorX = polyEdge[0]+posX;
+            var sensorY = polyEdge[1]+posY;
+            sensorRange = Math.max(Entity.__distanceBetweenTwoPoints(posX, posY, sensorX, sensorY), sensorRange);
+            return [sensorX, sensorY]; //move to point
         });
 
         this.sensor_polygons[sensor] = sensorPolygon;
+        this.sensor_range = sensorRange;
 
         var polyk_sensorPolygon = []; //stupid library requires another format
         for (var pos_i in sensorPolygon) {
@@ -857,7 +958,7 @@ Entity.prototype.updateSensors = function(){
 };
 
 /**
- * Returns perceptions of Entitie's sensors. 
+ * Returns perceptions of Entitie's sensors.
  * It needs two lists with same length. Based on a list of perceivable positions it returns object with same index
  * If nothing is perceived returns null
  *
@@ -866,10 +967,11 @@ Entity.prototype.updateSensors = function(){
  *      {
  *          sensorname_1: [
  *              {
- *                  "entity": //reference to perceived object
- *                  "position" // position of perceived object
- *                  "distance" // distance to perceived object
- *                  "direction" // direction to perceived object (corresponding to own direction)
+ *                  "type": // type of perceived object Entity-Object, Edge-Object etc.
+ *                  "object": //reference to perceived object
+ *                  "position" // position of perceived object (optional if Entity-Object)
+ *                  "distance" // distance to perceived object (optional if Entity-Object)
+ *                  "direction" // direction to perceived object (corresponding to own direction)  (optional if Entity-Object)
  *              }, {
  *                  ...
  *              }, 
@@ -888,7 +990,7 @@ Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivab
         Log.error("Can not calculate perceptions for " + this.name + " \n" +
             "perceivable_positions_list must have same length as perceivable_objects_list \n" +
             "have " + perceivable_positions_list.length + " positions and " + perceivable_objects_list + " objects in EntityCollection");
-        return;
+        return null;
     }
 
     var sensor_polygons = this.sensor_polygons;
@@ -898,21 +1000,22 @@ Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivab
         var sensor_polygon = sensor_polygons[sensor_tag];
         for (var pos_i in perceivable_positions_list) {
             var position = perceivable_positions_list[pos_i];
-            if (position[0] === this.posX && position[1] === this.posY) {
-                continue; //skip self
+            var isPoint = true;
+
+            if (position.length === 2 && position.some(isNaN))
+                isPoint = false;
+
+            if (isPoint) {
+                var perception = this.getPointPerception(position, sensor_polygon);
+            } else {
+                var perception = this.getEdgePerception(position[0], position[1], sensor_polygon);
             }
 
-            if (Entity.__pointInPolygon(position[0], position[1], sensor_polygon)){
-                if (!perceptions[sensor_tag]){
+            if (perception) {
+                if (!perceptions[sensor_tag])
                     perceptions[sensor_tag] = [];
-                }
 
-                var perception = {
-                    position: position,
-                    distance: Entity.__distanceBetweenTwoPoints(this.posX, this.posY, position[0], position[1]),
-                    direction: (this.direction - Entity.__angleBetweenPoints(this.posX, this.posY, position[0], position[1]))
-                };
-                perception['entity'] = perceivable_objects_list[pos_i];
+                perception['object'] = perceivable_objects_list[pos_i];
                 perceptions[sensor_tag].push(perception);
             }
         }
@@ -923,6 +1026,95 @@ Entity.prototype.getPerceptions = function(perceivable_positions_list, perceivab
     } else {
         return null;
     }
+};
+
+/**
+ * Returns a perception if point in sensorpolygon. Null otherwise
+ * @param position position of perceivable point
+ * @param sensor_polygon Sensorpolygon
+ * @returns {*} perception object
+ */
+Entity.prototype.getPointPerception = function(position, sensor_polygon) {
+
+    if (position[0] === this.posX && position[1] === this.posY) {
+        //skip self
+    } else if (!this.isPointInSensorRange(position[0], position[1])) {
+        //skip entities out of range
+    } else if (Entity.__pointInPolygon(position[0], position[1], sensor_polygon)) {
+        var perception = {
+            type: 'Entity-Object',
+            position: position,
+            distance: Entity.__distanceBetweenTwoPoints(this.posX, this.posY, position[0], position[1]),
+            direction: (this.direction - Entity.__angleBetweenPoints(this.posX, this.posY, position[0], position[1]))
+        };
+        return perception;
+    }
+    return null;
+};
+
+/**
+ * Returns a perception if edge crosses sensor_polygon lines. Null otherwise
+ * @param startPos start-position of edge
+ * @param endPos end position of edge
+ * @param sensor_polygon polygon describing sensor
+ * @returns {*}
+ */
+Entity.prototype.getEdgePerception = function(startPos, endPos, sensor_polygon) {
+
+    var edgePerceived = false;
+    if (!this.isEdgeInSensorRange(startPos[0], startPos[1], endPos[0], endPos[1])) {
+        //skip entities out of range
+    } else {
+        var intersectionPoints = [];
+
+        if (Entity.__pointInPolygon(startPos[0], startPos[1], sensor_polygon) && Entity.__pointInPolygon(endPos[0], endPos[1], sensor_polygon)){
+            edgePerceived = true;
+        } else {
+            for (var edge_index = 0; edge_index < sensor_polygon.length; edge_index++) {
+                var next_edge_index = 0;
+                if (edge_index < sensor_polygon.length-1)
+                    next_edge_index = (1 + edge_index);
+                var edge_start = sensor_polygon[edge_index];
+                var edge_end = sensor_polygon[next_edge_index];
+                if (Entity.__doEdgesIntersect(edge_start, edge_end, startPos, endPos)) {
+                    edgePerceived = true;
+                    var intersectionPos = Entity.__getIntersectionPoint(edge_start, edge_end, startPos, endPos);
+                    if (intersectionPos) intersectionPoints.push(intersectionPos);
+                }
+            }
+        }
+    }
+
+    if (edgePerceived) {
+        var perception = {
+            type: 'Edge-Object',
+            sensor_intersections: intersectionPoints
+        };
+        return perception;
+    }
+    return null;
+};
+
+/**
+ * Returns if point is in range of sensor (max distance between sensor points and entity)
+ * @param pointX
+ * @param pointY
+ * @returns {boolean}
+ */
+Entity.prototype.isPointInSensorRange = function(pointX, pointY) {
+    return Entity.__distanceBetweenTwoPoints(this.posX, this.posY, pointX, pointY) <= this.sensor_range;
+};
+
+/**
+ * Returns if minimal distance to an edge is in range of sensor
+ * @param startX start X of edge
+ * @param startY start Y of edge
+ * @param endX end X of edge
+ * @param endY end Y of edge
+ * @returns {boolean}
+ */
+Entity.prototype.isEdgeInSensorRange = function(startX, startY, endX, endY) {
+    return Entity.__minDistPointToEdge(this.posX, this.posY, startX, startY, endX, endY) <= this.sensor_range;
 };
 
 /**
@@ -986,6 +1178,74 @@ Entity.__angleBetweenPoints = function(posX1, posY1, posX2, posY2) {
     return Math.atan2(posY2 - posY1, posX2 - posX1) * 180 / Math.PI;
 };
 
+/**
+ * Determines if two lines cross each other
+ * @param posA1 position of first line
+ * @param posA2 position of first line
+ * @param posB1 position of second line
+ * @param posB2 position of second line
+ * @returns {boolean}
+ * @private
+ */
+Entity.__doEdgesIntersect = function(posA1, posA2, posB1, posB2) {
+    var a = posA1[0];
+    var b = posA1[1];
+    var c = posA2[0];
+    var d = posA2[1];
+    var p = posB1[0];
+    var q = posB1[1];
+    var r = posB2[0];
+    var s = posB2[1];
+
+    var det, gamma, lambda;
+    det = (c - a) * (s - q) - (r - p) * (d - b);
+    if (det === 0) {
+        return false;
+    } else {
+        lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+        gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+        return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+    }
+};
+
+/**
+ * Returns intersection point between two lines. Null otherwise
+ * @param edge1_start
+ * @param edge1_end
+ * @param edge2_start
+ * @param edge2_end
+ * @returns {*}
+ * @private
+ */
+Entity.__getIntersectionPoint = function(edge1_start, edge1_end, edge2_start, edge2_end) {
+
+    var denominator, a, b, numerator1, numerator2, 
+    
+        denominator = ((edge2_end[1] - edge2_start[1]) * (edge1_end[0] - edge1_start[0])) - ((edge2_end[0] - edge2_start[0]) * (edge1_end[1] - edge1_start[1]));
+    if (denominator == 0) {
+        return null;
+    }
+    a = edge1_start[1] - edge2_start[1];
+    b = edge1_start[0] - edge2_start[0];
+    numerator1 = ((edge2_end[0] - edge2_start[0]) * a) - ((edge2_end[1] - edge2_start[1]) * b);
+    numerator2 = ((edge1_end[0] - edge1_start[0]) * a) - ((edge1_end[1] - edge1_start[1]) * b);
+    a = numerator1 / denominator;
+    b = numerator2 / denominator;
+
+    if (a > 0 && a < 1 && b > 0 && b < 1)
+        return [edge1_start[0] + (a * (edge1_end[0] - edge1_start[0])), edge1_start[1] + (a * (edge1_end[1] - edge1_start[1]))];
+    else
+        return null;
+};
+
+/**
+ * Determines if a point is inside a polygon
+ * @param posX
+ * @param posY
+ * @param polygonArray
+ * @returns {boolean}
+ * @private
+ */
 Entity.__pointInPolygon = function(posX, posY, polygonArray) {
     var x = posX, y = posY;
     var vs = polygonArray;
@@ -1003,6 +1263,50 @@ Entity.__pointInPolygon = function(posX, posY, polygonArray) {
 };
 
 /**
+ * Determines shortest distance between a line ad a point
+ * (from https://unpkg.com/mathjs@4.4.1/dist/math.js)
+ * @param pointX
+ * @param pointY
+ * @param startX
+ * @param startY
+ * @param endX
+ * @param endY
+ * @returns {number}
+ * @private
+ */
+Entity.__minDistPointToEdge = function(pointX, pointY, startX, startY, endX, endY) {
+
+    var parallelY = false;
+    var interSectX = 0;
+    var interSectY = 0;
+
+    if(!(endX - startX)) { //parallel to y
+        var result = Entity.__distanceBetweenTwoPoints(pointX, pointY, startX, pointY);
+        interSectX = startX;
+        interSectY = pointY;
+        parallelY = true;
+    } else if(!(endY - startY)){ // parallel to x
+        var result =  Entity.__distanceBetweenTwoPoints(pointX, pointY, pointX, startY);
+        interSectX = pointX;
+        interSectY = startY;
+    } else {
+        var left, tg = -1 / ((endY - startY) / (endX - startX));
+        interSectX = left = (endX * (pointX * tg - pointY + startY) + startX * (pointX * - tg + pointY - endY)) / (tg * (endX - startX) + startY - endY);
+        interSectY = tg * left - tg * pointX + pointY
+        var result = Entity.__distanceBetweenTwoPoints(pointX, pointY, interSectX, interSectY);
+    }
+
+    if (!parallelY && Math.min(startX, endX) <= interSectX && Math.max(startX, endX) >= interSectX)
+        return result;
+    else if (parallelY && Math.min(startY, endY) <= interSectY && Math.max(startY, endY) >= interSectY)
+        return result;
+
+    var distStart = Entity.__distanceBetweenTwoPoints(pointX, pointY, startX, startY);
+    var distEnd = Entity.__distanceBetweenTwoPoints(pointX, pointY, endX, endY);
+    return Math.min(distStart, distEnd);
+};
+
+/**
  * End of class definitions
  */
 
@@ -1017,4 +1321,19 @@ $('document').ready(function(){
     ControlPanel.init();
 
     load_bobbel_data();
+
+    /* display edges and entities */
+    var edges_list = EdgeCollection.getEdges();
+    for (var index in edges_list) {
+        var perimeter = edges_list[index].perimeter;
+        var color = edges_list[index].color;
+        Tank.displayEdge(perimeter[0], perimeter[1] , color);
+    }
+
+    var entities_list = EntityCollection.getEntities();
+    for (var index in entities_list)
+        Tank.displayEntity(entities_list[index]);
+
+
+    Tank.flush();
 });

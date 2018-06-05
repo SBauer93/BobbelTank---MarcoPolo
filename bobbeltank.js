@@ -20,6 +20,7 @@ var load_bobbel_data = function(){
     /** place init code here **/
 
     EntityCollection.setEntities(bobbel_entities, bobbel_sensors);
+    EdgeCollection.setEdges(bobbel_edges);
 
     /** or here **/
 
@@ -48,9 +49,22 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         for (var sensor in perceptions) {
             var perception_log = [];
             for (var index in perceptions[sensor]){
-                perception_log.push(("(" + perceptions[sensor][index]['entity']['name']
-                + " dist " + Math.round(perceptions[sensor][index]['distance'])
-                + " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
+
+                var perception = perceptions[sensor][index];
+
+                if (perception['type'] === 'Entity-Object')
+                    perception_log.push(("(" + perceptions[sensor][index]['object']['name']
+                        + " dist " + Math.round(perceptions[sensor][index]['distance'])
+                        + " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
+
+                if (perception['type'] === 'Edge-Object'){
+                    var intersectionsList = perceptions[sensor][index]['sensor_intersections'];
+                    if (intersectionsList.length === 2) {
+                        Tank.displayEdge(intersectionsList[0], intersectionsList[1], 'yellow');
+                    }
+                    perception_log.push(("(" + perceptions[sensor][index]['object']['name'] + ") "));
+                }
+
             }
             Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
@@ -70,8 +84,6 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             entity.rotate(-90);
         }
     }
-
-    Tank.displayEntity(entity); // adds updated entity to Tank visualisation
 };
 
 /**

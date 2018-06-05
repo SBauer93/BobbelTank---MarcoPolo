@@ -1,8 +1,18 @@
 ## Classes
 
 <dl>
+<dt><a href="#Edge">Edge</a></dt>
+<dd></dd>
 <dt><a href="#Entity">Entity</a></dt>
 <dd></dd>
+</dl>
+
+## Members
+
+<dl>
+<dt><a href="#EdgeCollection">EdgeCollection</a></dt>
+<dd><p>Handles all edges and obstacles</p>
+</dd>
 </dl>
 
 ## Objects
@@ -30,6 +40,22 @@
 </dd>
 </dl>
 
+<a name="Edge"></a>
+
+## Edge
+**Kind**: global class  
+<a name="new_Edge_new"></a>
+
+### new Edge(name, perimeter, color)
+Mini-Class definition of a edge containing properties name, perimeter and color
+
+
+| Param | Description |
+| --- | --- |
+| name | string |
+| perimeter | array containing start and endpoint [[startX, startY][endY, endY]] |
+| color | color of edge (invisible if undefined) |
+
 <a name="Entity"></a>
 
 ## Entity
@@ -42,6 +68,10 @@
     * [.setMovementBounds(minX, minY, maxX, maxY)](#Entity+setMovementBounds)
     * [.updateSensors()](#Entity+updateSensors)
     * [.getPerceptions(perceivable_positions_list, perceivable_objects_list)](#Entity+getPerceptions) ⇒ <code>String</code>
+    * [.getPointPerception(position, sensor_polygon)](#Entity+getPointPerception) ⇒ <code>\*</code>
+    * [.getEdgePerception(startPos, endPos, sensor_polygon)](#Entity+getEdgePerception) ⇒ <code>\*</code>
+    * [.isPointInSensorRange(pointX, pointY)](#Entity+isPointInSensorRange) ⇒ <code>boolean</code>
+    * [.isEdgeInSensorRange(startX, startY, endX, endY)](#Entity+isEdgeInSensorRange) ⇒ <code>boolean</code>
     * [.toString()](#Entity+toString) ⇒ <code>string</code>
 
 <a name="new_Entity_new"></a>
@@ -60,6 +90,7 @@ Entities properties are:
              direction:              rotation of entity in degrees (0-360) 0 is along x-axis 90 along y-axis ... If changed directly call entity.updateSensors() to update polygons
              sensor_colors:          object providing sensor color for every sensor. Use entity.sensor_colors[<sensorname>]
              sensor_polygons:        object contains calculated sensor polygons around entity based on current position and direction Use entity.sensor_polygons[<sensorname>]
+             sensor_range            defines maximum distance of sensor from entity position
              uuid:                   generated unique-id. Use to reference entity instead of name-property if you use same name for multiple entities
              movementRestricted:     true if entities movement is restricted into boundaries (tank for example). false else
              restrictedXmin          number if movement restricted. null else
@@ -121,7 +152,7 @@ Updates entities sensor_polygons etc. according to position and direction proper
 <a name="Entity+getPerceptions"></a>
 
 ### entity.getPerceptions(perceivable_positions_list, perceivable_objects_list) ⇒ <code>String</code>
-Returns perceptions of Entitie's sensors. 
+Returns perceptions of Entitie's sensors.
 It needs two lists with same length. Based on a list of perceivable positions it returns object with same index
 If nothing is perceived returns null
 
@@ -130,10 +161,11 @@ perceptions
      {
          sensorname_1: [
              {
-                 "entity": //reference to perceived object
-                 "position" // position of perceived object
-                 "distance" // distance to perceived object
-                 "direction" // direction to perceived object (corresponding to own direction)
+                 "type": // type of perceived object Entity-Object, Edge-Object etc.
+                 "object": //reference to perceived object
+                 "position" // position of perceived object (optional if Entity-Object)
+                 "distance" // distance to perceived object (optional if Entity-Object)
+                 "direction" // direction to perceived object (corresponding to own direction)  (optional if Entity-Object)
              }, {
                  ...
              }, 
@@ -150,12 +182,70 @@ perceptions
 | perceivable_positions_list | <code>array</code> | list of perceivable positions |
 | perceivable_objects_list | <code>array</code> | list of objects at these positions |
 
+<a name="Entity+getPointPerception"></a>
+
+### entity.getPointPerception(position, sensor_polygon) ⇒ <code>\*</code>
+Returns a perception if point in sensorpolygon. Null otherwise
+
+**Kind**: instance method of [<code>Entity</code>](#Entity)  
+**Returns**: <code>\*</code> - perception object  
+
+| Param | Description |
+| --- | --- |
+| position | position of perceivable point |
+| sensor_polygon | Sensorpolygon |
+
+<a name="Entity+getEdgePerception"></a>
+
+### entity.getEdgePerception(startPos, endPos, sensor_polygon) ⇒ <code>\*</code>
+Returns a perception if edge crosses sensor_polygon lines. Null otherwise
+
+**Kind**: instance method of [<code>Entity</code>](#Entity)  
+
+| Param | Description |
+| --- | --- |
+| startPos | start-position of edge |
+| endPos | end position of edge |
+| sensor_polygon | polygon describing sensor |
+
+<a name="Entity+isPointInSensorRange"></a>
+
+### entity.isPointInSensorRange(pointX, pointY) ⇒ <code>boolean</code>
+Returns if point is in range of sensor (max distance between sensor points and entity)
+
+**Kind**: instance method of [<code>Entity</code>](#Entity)  
+
+| Param |
+| --- |
+| pointX | 
+| pointY | 
+
+<a name="Entity+isEdgeInSensorRange"></a>
+
+### entity.isEdgeInSensorRange(startX, startY, endX, endY) ⇒ <code>boolean</code>
+Returns if minimal distance to an edge is in range of sensor
+
+**Kind**: instance method of [<code>Entity</code>](#Entity)  
+
+| Param | Description |
+| --- | --- |
+| startX | start X of edge |
+| startY | start Y of edge |
+| endX | end X of edge |
+| endY | end Y of edge |
+
 <a name="Entity+toString"></a>
 
 ### entity.toString() ⇒ <code>string</code>
 Overrides default string output for Entity class
 
 **Kind**: instance method of [<code>Entity</code>](#Entity)  
+<a name="EdgeCollection"></a>
+
+## EdgeCollection
+Handles all edges and obstacles
+
+**Kind**: global variable  
 <a name="Tank"></a>
 
 ## Tank : <code>object</code>
@@ -172,8 +262,9 @@ Tank provides different canvas elements.
 * [Tank](#Tank) : <code>object</code>
     * [.init()](#Tank.init)
     * [.displayEntity(entity)](#Tank.displayEntity)
-    * [.displayPerception(sensorPolygon, color)](#Tank.displayPerception)
-    * [.displayEntityColor(color, posX, posY, radius)](#Tank.displayEntityColor)
+    * [.displayEdge(start, end, color)](#Tank.displayEdge)
+    * [.displayPolygon(sensorPolygon, color)](#Tank.displayPolygon)
+    * [.displayColorRing(color, posX, posY, radius)](#Tank.displayColorRing)
     * [.displayImage(source, posX, posY, sizeX, sizeY)](#Tank.displayImage)
     * [.displayCoords()](#Tank.displayCoords)
     * [.flush()](#Tank.flush)
@@ -197,9 +288,23 @@ Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
 | --- | --- |
 | entity | an entity object |
 
-<a name="Tank.displayPerception"></a>
+<a name="Tank.displayEdge"></a>
 
-### Tank.displayPerception(sensorPolygon, color)
+### Tank.displayEdge(start, end, color)
+Prints a Edge to canvas (if not prevented by Tank.show... properties)
+Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
+
+**Kind**: static method of [<code>Tank</code>](#Tank)  
+
+| Param | Description |
+| --- | --- |
+| start | Start point [x,y] |
+| end | End point [x,y] |
+| color | fill color |
+
+<a name="Tank.displayPolygon"></a>
+
+### Tank.displayPolygon(sensorPolygon, color)
 Prints a sensor- (or normal) Polygon to canvas (if not prevented by Tank.show... properties)
 Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
 
@@ -210,9 +315,9 @@ Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
 | sensorPolygon | Polygon list of points [[x,y], [x,y], [x,y], ... ] |
 | color | fill color |
 
-<a name="Tank.displayEntityColor"></a>
+<a name="Tank.displayColorRing"></a>
 
-### Tank.displayEntityColor(color, posX, posY, radius)
+### Tank.displayColorRing(color, posX, posY, radius)
 Prints a colored circle (used to highlight entities) at given position to canvas (if not prevented by Tank.show... properties)
 Prints to scratch_canvas (to be visible Tank.flush() has to be performed)
 
