@@ -83,6 +83,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         } else {
             entity.rotate(-20);
         }
+        entity.move(-1);
     }
 };
 
