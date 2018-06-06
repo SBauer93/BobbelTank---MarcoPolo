@@ -72,16 +72,16 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
     if (!perceptions) {
         if (Math.random() > 0.5) {
-            entity.rotate(10);
+            entity.rotate(5);
         } else {
-            entity.rotate(-10);
+            entity.rotate(-5);
         }
         entity.move(1);
     } else {
         if (Math.random() > 0.5) {
-            entity.rotate(90);
+            entity.rotate(20);
         } else {
-            entity.rotate(-90);
+            entity.rotate(-20);
         }
     }
 };

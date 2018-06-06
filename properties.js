@@ -151,9 +151,17 @@ var bobbel_edges = [
         color : "red",
         name: "upper_edge"
     },{
-        perimeter: [[400,200], [400,400]],
+        perimeter: [[400,200], [400,300]],
         color : "red",
-        name: "right_edge"
+        name: "right_small_edge"
+    },{
+        perimeter: [[400,300], [500,300]],
+        color : "red",
+        name: "upper_gate_edge"
+    },{
+        perimeter: [[400,400], [500,400]],
+        color : "red",
+        name: "lower_gate_edge"
     },{
         perimeter: [[120,400], [400,400]],
         color : "red",
