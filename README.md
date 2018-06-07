@@ -3,6 +3,17 @@
 A little web-based simulator for multi agent interactions. Runs out of the box. Just open index.html in your web-browser.
 ![](doc/ScreenShot.png)
 
+## Herunterladen und Starten
+
+### Herunterladen
+
+* Entweder direkt von der Webseite herunterladen kleines **Wolkensymbol** rechts neben dem *Web IDE* Knopf weiter oben
+* .. oder mit git clonen. Dafür git installieren und ```git clone https://gitlab.com/RobinSunCruiser/bobbel-tank.git``` ausführen.
+
+### Starten
+* Entweder die **index.html** direkt mit einem Webbrowser öffnen
+* .. oder einen lokalen Webserver installieren zB. *mamp* und die Dateien dort ins *Web-Root*-Verzeichnis kopieren und im Browser über localhost:xyz (meist localhost:8888) öffnen
+
 ## Overview
 This simulator can be used to implement little entities with sensors in a 2D-Environment.
 
