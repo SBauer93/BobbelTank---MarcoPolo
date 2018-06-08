@@ -189,7 +189,7 @@ These are the methods available in the Entity-Object.
 * ```entity.getPerceptions(pos_list, obj_list)``` Determines for single positions and position-pairs (edges) if they are perceived by entities Sensors. If position at index is perceived it returns object with index from obj_list together with some properties depending of the perception type. Positions can contain points and edges (```[[x,y], [x,y], [[x,y],[x,y]], [x,y]]```)
 
 #### Perception-Object
-The Perception-Object is returned by the ```getPerceptions``` method. It maps *sensor_tags* to lists of perception objects. Perception can be of type *Entity-Object* or *Edge-Object* and contain different addional properties and references to perceived object. If there is absolutely no perception ```getPerceptions``` returns ```null```.
+The Perception-Object is returned by the ```getPerceptions``` method and provided in the **perceptions** parameter of ```perform_simulation_step_on_entity(entity, perceptions, step_count)```. It maps *sensor_tags* to lists of perceptions. Perception can be of type *Entity-Object* or *Edge-Object* and contain different addional properties and references to perceived object. If there is absolutely no perception the Object is just ```null```.
 	
 	{
 		sensor_tag_1: [				// "see"
