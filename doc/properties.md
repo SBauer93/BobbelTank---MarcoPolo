@@ -33,6 +33,7 @@
              The entity can be seen at position (0,0) Looking to direction 0 (along x-axis)
              All points defined for sensor polygon are in relation to this entity
  color       in which sensor is displayed. If no color is defined sensor is invisible (but active)</p>
+<p> Example:</p>
 <pre><code> see: {                                         // sensor has tag see
      perimeter: [[0,0], [40,20], [40,-20]],     // spans a triangle from entity (0,0) forward to X 40 and span -20 to 20
      color : &quot;#FFDD00&quot;                          // is displayed yellow
@@ -68,7 +69,7 @@ List of Bobbel entities[{bobbel_1},{bobbel_2},{bobbel_3},...]Every Bobbel can
 <a name="bobbel_sensors"></a>
 
 ## bobbel_sensors
-Sensor definitions. Sensors are referenced by an sensor tag (used to attach sensors to bobbels)     {         sensortag_1: {sensor_desc_1},         sensortag_2: {sensor_desc_2},         sensortag_3: {sensor_desc_3}     }Every Sensor has the follogin properties perimeter   defines the sensor polygon (list of points) around an entity             The entity can be seen at position (0,0) Looking to direction 0 (along x-axis)             All points defined for sensor polygon are in relation to this entity color       in which sensor is displayed. If no color is defined sensor is invisible (but active)     see: {                                         // sensor has tag see         perimeter: [[0,0], [40,20], [40,-20]],     // spans a triangle from entity (0,0) forward to X 40 and span -20 to 20         color : "#FFDD00"                          // is displayed yellow     }
+Sensor definitions. Sensors are referenced by an sensor tag (used to attach sensors to bobbels)     {         sensortag_1: {sensor_desc_1},         sensortag_2: {sensor_desc_2},         sensortag_3: {sensor_desc_3}     }Every Sensor has the follogin properties perimeter   defines the sensor polygon (list of points) around an entity             The entity can be seen at position (0,0) Looking to direction 0 (along x-axis)             All points defined for sensor polygon are in relation to this entity color       in which sensor is displayed. If no color is defined sensor is invisible (but active) Example:     see: {                                         // sensor has tag see         perimeter: [[0,0], [40,20], [40,-20]],     // spans a triangle from entity (0,0) forward to X 40 and span -20 to 20         color : "#FFDD00"                          // is displayed yellow     }
 
 **Kind**: global variable  
 <a name="bobbel_edges"></a>

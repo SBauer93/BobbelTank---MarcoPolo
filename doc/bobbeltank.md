@@ -2,28 +2,36 @@
 
 <dl>
 <dt><a href="#load_bobbel_data">load_bobbel_data()</a></dt>
-<dd><p>This function is not meant to be called by you. It is called automatically once after Program loaded or if &quot;Restart&quot; pressed
-Adds Entities defined in properties.js to Simulator
-     EntityCollection.setEntities(bobbel_entities, bobbel_sensors);</p>
+<dd><p>This function is called by Simulator automatically when program loaded or if &quot;Restart&quot; pressed</p>
+<p>Adds Entities defined in properties.js to Simulator
+     EntityCollection.setEntities(bobbel_entities, bobbel_sensors);
+and adds Edges defined in properties.js to Simulator
+     EdgeCollection.setEdges(bobbel_edges);</p>
 <p>You can perform additional actions for startup here if you wish</p>
 </dd>
 <dt><a href="#perform_simulation_step_initialization">perform_simulation_step_initialization(entity_list, step_count)</a></dt>
-<dd><p>Called in preparation of every Simulation step</p>
+<dd><p>This function is not meant to be called by you. Called in preparation of every Simulation step
+Perform preparation steps here if you like</p>
 </dd>
 <dt><a href="#perform_simulation_step_on_entity">perform_simulation_step_on_entity(entity, perceptions, step_count)</a></dt>
-<dd><p>This function is not meant to be called by you. It is called automatically during Simulation step for every Entity-Object in EntityCollection</p>
+<dd><p>This function is not meant to be called by you. It is called automatically during Simulation step for every Entity-Object in EntityCollection
+Perform you simulation code for every entity here!</p>
 </dd>
 <dt><a href="#perform_simulation_step_finalization">perform_simulation_step_finalization(entity_list, step_count, duration)</a></dt>
-<dd><p>This function is not meant to be called by you. It is called automatically for finalization at the end of every simulation step. Changes to visualization are performed afterwards</p>
+<dd><p>This function is not meant to be called by you. It is called automatically for finalization at the end of every simulation step. Changes to visualization are performed afterwards
+Perform you finalization code here if you like!</p>
 </dd>
 </dl>
 
 <a name="load_bobbel_data"></a>
 
 ## load_bobbel_data()
-This function is not meant to be called by you. It is called automatically once after Program loaded or if "Restart" pressed
+This function is called by Simulator automatically when program loaded or if "Restart" pressed
+
 Adds Entities defined in properties.js to Simulator
      EntityCollection.setEntities(bobbel_entities, bobbel_sensors);
+and adds Edges defined in properties.js to Simulator
+     EdgeCollection.setEdges(bobbel_edges);
 
 You can perform additional actions for startup here if you wish
 
@@ -31,7 +39,8 @@ You can perform additional actions for startup here if you wish
 <a name="perform_simulation_step_initialization"></a>
 
 ## perform_simulation_step_initialization(entity_list, step_count)
-Called in preparation of every Simulation step
+This function is not meant to be called by you. Called in preparation of every Simulation step
+Perform preparation steps here if you like
 
 **Kind**: global function  
 
@@ -44,6 +53,7 @@ Called in preparation of every Simulation step
 
 ## perform_simulation_step_on_entity(entity, perceptions, step_count)
 This function is not meant to be called by you. It is called automatically during Simulation step for every Entity-Object in EntityCollection
+Perform you simulation code for every entity here!
 
 **Kind**: global function  
 
@@ -57,6 +67,7 @@ This function is not meant to be called by you. It is called automatically durin
 
 ## perform_simulation_step_finalization(entity_list, step_count, duration)
 This function is not meant to be called by you. It is called automatically for finalization at the end of every simulation step. Changes to visualization are performed afterwards
+Perform you finalization code here if you like!
 
 **Kind**: global function  
 

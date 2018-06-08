@@ -8,10 +8,12 @@
  */
 
 /**
- * This function is not meant to be called by you. It is called automatically once after Program loaded or if "Restart" pressed
- 
+ * This function is called by Simulator automatically when program loaded or if "Restart" pressed
+ *
  * Adds Entities defined in properties.js to Simulator
  *      EntityCollection.setEntities(bobbel_entities, bobbel_sensors);
+ * and adds Edges defined in properties.js to Simulator
+ *      EdgeCollection.setEdges(bobbel_edges);
  *
  * You can perform additional actions for startup here if you wish
  */
@@ -28,9 +30,12 @@ var load_bobbel_data = function(){
 };
 
 /**
- * Called in preparation of every Simulation step
+ * This function is not meant to be called by you. Called in preparation of every Simulation step
+ * Perform preparation steps here if you like
+
  * @param entity_list list of all entities that are included to simulation
  * @param step_count number of simulation step
+ *
  */
 var perform_simulation_step_initialization = function(entity_list, step_count){
 
@@ -38,6 +43,7 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
 
 /**
  * This function is not meant to be called by you. It is called automatically during Simulation step for every Entity-Object in EntityCollection
+ * Perform you simulation code for every entity here!
  *
  * @param entity reference to current Entity-Object (see README.md)
  * @param perceptions object mapping sensornames to lists of perceived entities or null if empty (see README.md)
@@ -89,6 +95,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
 /**
  * This function is not meant to be called by you. It is called automatically for finalization at the end of every simulation step. Changes to visualization are performed afterwards
+ * Perform you finalization code here if you like!
+ *
  * @param entity_list list of all entities
  * @param step_count number of simulation step
  * @param duration time simulation took
