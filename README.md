@@ -3,18 +3,37 @@
 A little web-based simulator for multi agent interactions. Runs out of the box. Just open index.html in your web-browser.
 ![](doc/ScreenShot.png)
 
-## Herunterladen und Starten
+## Project-Setup
 
-### Herunterladen
+You can download the Project folder from [gitlab website](https://gitlab.com/RobinSunCruiser/bobbel-tank.git) using the **Cloudsymbol**
 
-* Entweder direkt von der Webseite herunterladen kleines **Wolkensymbol** rechts neben dem *Web IDE* Knopf weiter oben
-* .. oder mit git clonen. Dafür git installieren und ```git clone https://gitlab.com/RobinSunCruiser/bobbel-tank.git``` ausführen.
+![](doc/downloadbutton.png)
 
-### Starten
-* Entweder die **index.html** direkt mit einem Webbrowser öffnen
-* .. oder einen lokalen Webserver installieren zB. *mamp* und die Dateien dort ins *Web-Root*-Verzeichnis kopieren und im Browser über localhost:xyz (meist localhost:8888) öffnen
+Or clone with [git](https://de.wikipedia.org/wiki/Git). [Download git](https://git-scm.com/downloads), chose destination folder and and clone the project into this folder. (In Terminal go to your folder with ```cd``` and use ```git clone https://gitlab.com/RobinSunCruiser/bobbel-tank.git```
 
-## Overview
+### Setup and start
+
+The project is implemented as simple, *static* website. You can either start the simulator by opening **index.html** directly from folder with your web browser or put the files on a webserver. Delivered by an webserver the page is able to refresh itself if its files are changed.
+
+#### (Optional but recommended) Webserver setup
+The following steps describe how to set up a webserver and start the project in debug mode. You can use the browser and server you like. Our example uses mamp and firefox. 
+
+* Install local webserver ([mamp](https://www.mamp.info/de/downloads/) *Pro* is not needed)
+* Check location of **Web-Root-Directory** (in *Preferences* and *Web-Server*)
+* Check **Port** number (in *Preferences* -> *Ports* -> *Apache* normally 8888)
+* Move content of source folder into **Web-Root-Directory**
+* Start Mamp server
+* Open project in your browser with url http://127.0.0.1:**port** (ex [127.0.0.1:8888](127.0.0.1:8888))
+
+You should also be able to use *localhost* instead of *127.0.0.1*. But sometimes *localhost* is not resolved correctly to *127.0.0.1*. 
+
+For debugging information and auto refresh activate development tools in your web browser and disable caching(!)
+
+* In *Firefox* go to *tools* -> *Web Developer* -> *Inspector*
+* Disable cache in *network-tab* -> *disable cache*. Cache is disabled as long as this inspector is active.
+* Furthermore you'll find several very helpfull tools, such as the *debugger* for *breakpoints*.
+
+## Project Overview
 This simulator can be used to implement little entities with sensors in a 2D-Environment.
 
 It has a tiny API and configuration interface. The rest of the project is focused on simplicity and provides heavy documentation.

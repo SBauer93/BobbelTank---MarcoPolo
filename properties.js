@@ -54,13 +54,6 @@ var bobbel_entities =
             perceptions : ["pirate"],
             direction : 20
         }, {
-            name: "Hannah",
-            image: "images/150x150_bubble.png",
-            color: "pink",
-            position : [200,375],
-            perceptions : ["see"],
-            direction : 0
-        }, {
             name: "Captain Bobbel",
             image: "images/150x150_bubble.png",
             color: "red",
