@@ -30,20 +30,26 @@
  *       }
  *
  */
+
+function choosePositions(seed, sign) {
+    var random = Math.floor(Math.random() * 15);
+    return sign === 1 ? seed + random : seed - random;
+}
+
 var bobbel_entities =
 
     [
         {
             name: "Wilson",
             image: "images/150x150_bubble.png",
-            position: [200, 200],
+            position: [choosePositions(130, 1), choosePositions(130, 1)],
             direction: 0,
             perceptions : ["see", "hear", "feel"],
             color: "black"
         }, {
             name: "Mouse",
             image: "images/150x150_bubble.png",
-            position: [35, 2],
+            position: [choosePositions(130, 1), choosePositions(800, 1)],
             direction: 0,
             perceptions : [],
             color: "black"
@@ -56,16 +62,19 @@ var bobbel_entities =
         }, {
             name: "Captain Bobbel",
             image: "images/150x150_bubble.png",
+            position: [choosePositions(1300, 0), choosePositions(800, 0)],
             color: "red",
             perceptions : ["see", "hear", "feel"]
         }, {
             name: "Spock Bobbel",
             image: "images/150x150_bubble.png",
+            position: [choosePositions(500, 1), choosePositions(400, 0)],
             color: "blue",
             perceptions : ["see", "hear", "feel"]
         }, {
             name: "O'Brian Bobbel",
             image: "images/150x150_bubble.png",
+            position: [choosePositions(300, 0), choosePositions(600, 1)],
             color: "yellow",
             perceptions : ["see", "hear", "feel"]
         }
@@ -139,27 +148,19 @@ var bobbel_sensors = {
  */
 var bobbel_edges = [
     {
-        perimeter: [[120,0], [120,400]],
+        perimeter: [[120,120], [1300,120]],
+        color : "red",
+        name: "top_edge"
+    },{
+        perimeter: [[120,120], [120,800]],
         color : "red",
         name: "left_edge"
     },{
-        perimeter: [[120,120], [400,200]],
+        perimeter: [[1300,120], [1300,800]],
         color : "red",
-        name: "upper_edge"
+        name: "right_gate_edge"
     },{
-        perimeter: [[400,200], [400,300]],
-        color : "red",
-        name: "right_small_edge"
-    },{
-        perimeter: [[400,300], [500,300]],
-        color : "red",
-        name: "upper_gate_edge"
-    },{
-        perimeter: [[400,400], [500,400]],
-        color : "red",
-        name: "lower_gate_edge"
-    },{
-        perimeter: [[120,400], [400,400]],
+        perimeter: [[120,800], [1300,800]],
         color : "red",
         name: "bottom_edge"
     }
