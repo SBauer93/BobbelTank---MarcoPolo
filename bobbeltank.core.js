@@ -820,13 +820,21 @@ function Entity(entity_object, sensors_object) {
     this.image_src = entity_object['image'];
     this.movementRestricted = false;
     this.color = entity_object['color'];
+    this.isCatcher = entity_object['isCatcher'];
 
     //only sets position if input pos is array with length 2
     var pos = entity_object['position'];
     if (Array.isArray(pos) && pos.length === 2) {
-        this.posX = pos[0];
-        this.posY = pos[1];
-        this.direction = entity_object['direction'] | 0;
+        if (entity_object['isCatcher'] === true) {
+            // If bobbel is choosen as catcher, position him approx. in the middle of the area.
+            this.posX = 590;
+            this.posY = 500;
+            this.direction = entity_object['direction'] | 0;
+        } else {
+            this.posX = pos[0];
+            this.posY = pos[1];
+            this.direction = entity_object['direction'] | 0;
+        }
     }
 
     //transfer definitions of attached sensors into entity (only if definitions exist)
@@ -840,8 +848,14 @@ function Entity(entity_object, sensors_object) {
             this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_direction = 0;
-            this.sensor_colors[tag] = sensors_object[tag]['color'];
+            if (entity_object['isCatcher'] === true) {
+                // If bobbel is choosen as catcher, mark his perceptions with specific color.
+                this.sensor_colors[tag] = "red";
+            } else {
+                this.sensor_colors[tag] = sensors_object[tag]['color'];
+            }
         }
+
     }
     this.sensor_polygons = {};
     this.polyk_sensor_polygons = {};
@@ -1305,6 +1319,10 @@ Entity.__minDistPointToEdge = function(pointX, pointY, startX, startY, endX, end
     var distEnd = Entity.__distanceBetweenTwoPoints(pointX, pointY, endX, endY);
     return Math.min(distStart, distEnd);
 };
+
+function randomWalk() {
+
+}
 
 /**
  * End of class definitions

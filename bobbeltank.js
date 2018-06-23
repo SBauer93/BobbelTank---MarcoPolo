@@ -76,7 +76,9 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         }
     }
 
-    if (!perceptions) {
+    // Idea: suppress any movement reaction to an edge detection
+    // ==> Edge will be "free-floating" barrier
+    if (!perceptions || perceptions['type'] === 'Edge-Object') {
         if (Math.random() > 0.5) {
             entity.rotate(5);
         } else {

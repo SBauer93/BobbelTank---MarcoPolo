@@ -31,9 +31,9 @@
  *
  */
 
-function choosePositions(seed, sign) {
-    var random = Math.floor(Math.random() * 15);
-    return sign === 1 ? seed + random : seed - random;
+function choosePositions(seed) {
+    var random = Math.floor(Math.random() * 20);
+    return (Math.random() > 0.5) ? seed + random : seed - random;
 }
 
 var bobbel_entities =
@@ -42,41 +42,55 @@ var bobbel_entities =
         {
             name: "Wilson",
             image: "images/150x150_bubble.png",
-            position: [choosePositions(130, 1), choosePositions(130, 1)],
+            position: [choosePositions(450), choosePositions(730)],
             direction: 0,
             perceptions : ["see", "hear", "feel"],
-            color: "black"
+            color: "green",
+            isCatcher: true
         }, {
             name: "Mouse",
             image: "images/150x150_bubble.png",
-            position: [choosePositions(130, 1), choosePositions(800, 1)],
             direction: 0,
-            perceptions : [],
-            color: "black"
+            position: [choosePositions(200), choosePositions(200)],
+            perceptions : ["see", "hear", "feel"],
+            color: "black",
+            isCatcher: false
         }, {
             name: "Malotzki",
             image: "images/150x150_bubble.png",
             color: "cyan",
-            perceptions : ["pirate"],
-            direction : 20
+            position: [choosePositions(200), choosePositions(730)],
+            perceptions : ["see", "hear", "feel"],
+            direction : 20,
+            isCatcher: false
         }, {
             name: "Captain Bobbel",
             image: "images/150x150_bubble.png",
-            position: [choosePositions(1300, 0), choosePositions(800, 0)],
+            position: [choosePositions(1230), choosePositions(730)],
             color: "red",
-            perceptions : ["see", "hear", "feel"]
+            perceptions : ["see", "hear", "feel"],
+            isCatcher: false
         }, {
             name: "Spock Bobbel",
             image: "images/150x150_bubble.png",
-            position: [choosePositions(500, 1), choosePositions(400, 0)],
+            position: [choosePositions(1230), choosePositions(200)],
             color: "blue",
-            perceptions : ["see", "hear", "feel"]
+            perceptions : ["see", "hear", "feel"],
+            isCatcher: false
         }, {
             name: "O'Brian Bobbel",
             image: "images/150x150_bubble.png",
-            position: [choosePositions(300, 0), choosePositions(600, 1)],
+            position: [choosePositions(540), choosePositions(160)],
             color: "yellow",
-            perceptions : ["see", "hear", "feel"]
+            perceptions : ["see", "hear", "feel"],
+            isCatcher: false
+        }, {
+            name: "Cret Bobbel",
+            image: "images/150x150_bubble.png" ,
+            position: [choosePositions(840), choosePositions(760)],
+            color: "pink",
+            perceptions: ["see", "hear", "feel"],
+            isCatcher: false 
         }
     ];
 
