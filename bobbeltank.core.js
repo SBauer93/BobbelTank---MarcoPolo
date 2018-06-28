@@ -851,7 +851,7 @@ function Entity(entity_object, sensors_object) {
             this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_direction = 0;
-            if (entity_object['isCatcher'] === true) {
+            if (entity_object['isCatcher'] === true && tag !== 'hear') {
                 // If bobbel is choosen as catcher, mark his perceptions with specific color.
                 this.sensor_colors[tag] = "red";
             } else {
