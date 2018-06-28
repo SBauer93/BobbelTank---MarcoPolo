@@ -113,14 +113,22 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
     // Idea: suppress any movement reaction to an edge detection
     // ==> Edge will be "free-floating" barrier
-    if (!perceptions || perceptions['type'] === 'Edge-Object') {
+    if (!perceptions) {
         if (Math.random() > 0.5) {
             entity.rotate(5);
         } else {
             entity.rotate(-5);
         }
         entity.move(1);
-    } else {
+    } /* else if (bobbelSeen && bobbelSeen['isCatcher'] === true) {
+        console.warn('Catcher was seen !!!')
+        if (Math.random() > 0.5) {
+            entity.rotate(45);
+        } else {
+            entity.rotate(-45);
+        }
+        entity.move(-1);
+    } */ else {
         if (Math.random() > 0.5) {
             entity.rotate(20);
         } else {

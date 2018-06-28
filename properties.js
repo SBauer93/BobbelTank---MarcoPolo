@@ -129,11 +129,10 @@ var bobbel_sensors = {
         color : "orange"
     },
     hear: {
-        perimeter: [[-20,20], [20,20], [20,-20], [-20,-20]],
-        color : "orange"
+        perimeter: [[-1500,1500], [1500,1500], [1500,-1500], [-1500,-1500]]
     },
     feel: {
-        perimeter: [[0,0],[60, 30], [60, 15], [0, 0], [60, -15], [60, -30]],
+        perimeter: [[0,0],[0, 30], [30, 0], [0, -30], [-30, 0]],
         color : "orange"
     },
     pirate: {

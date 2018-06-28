@@ -822,7 +822,10 @@ function Entity(entity_object, sensors_object) {
     this.movementRestricted = false;
     this.color = entity_object['color'];
     this.isCatcher = entity_object['isCatcher'];
-
+    this.nodeOfInterest = [0, 0];		// current pos of the node, which affects the next movement, e.g. the catcher
+    this.shouts = false;				// Signal the shouting to other entities 
+     
+    var hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
     //only sets position if input pos is array with length 2
     var pos = entity_object['position'];
     if (Array.isArray(pos) && pos.length === 2) {
@@ -849,7 +852,7 @@ function Entity(entity_object, sensors_object) {
             this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_direction = 0;
-            if (entity_object['isCatcher'] === true) {
+            if (entity_object['isCatcher'] === true && tag !== 'hear') {
                 // If bobbel is choosen as catcher, mark his perceptions with specific color.
                 this.sensor_colors[tag] = "red";
             } else {
@@ -889,6 +892,45 @@ Entity.prototype.move = function(distance) {
 
     this.updateSensors();
 };
+
+Entity.prototype.setPosNodeOfInterest = function(posX, posY) {
+    this.nodeOfInterest = [posX, posY];
+}
+
+/** 
+ * Called by the catcher and, initially, by the other bobbels, too. Used to direct movement.
+*/
+Entity.prototype.estimateDirection = function(posX2, posY2) {
+    var posX1 = Entity.prototype.posX;
+    var posY1 = Entity.prototype.posY;
+    return Math.asin(Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2)/(posY2-posY1));
+}
+
+/** 
+ * Used by the catcher to find next promising 'target'.
+ * HINT: Already implemented by Marten, 
+*/
+/* Entity.prototype.findClosestNode = function(entities) {
+    var minDist = 3000; // Set arbitrary large start reference
+    var posX1 = Entity.prototype.posX;
+    var posY1 = Entity.prototype.posY;
+
+    for (var entity in entities) {
+        //
+        var posX2 = entity.posX + Math.floor(Math.random() * 10);
+        var posY2 = entity.posY + Math.floor(Math.random() * 10);
+
+        // Estimating distance through hearing is not very precise
+        var dist = Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2) 
+                    + Math.floor(Math.random() * 20); 
+
+        if (dist < minDist) {
+            minDist = dist;
+        }
+    }
+
+    return [posX2, posY2];
+} */
 
 /**
  * Rotates entity degrees (0-360). Positive degrees rotates counterclockwise negative clockwise
