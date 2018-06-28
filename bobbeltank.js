@@ -51,29 +51,64 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
  */
 var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
     
+	var marcoCoolDown = 500;
+	
+	//Shout Marco-Polo
+	
+	if(entity.shouts) {
+		if(entity.hasShouted)
+			entity.hasShouted = false;
+		else
+			entity.shouts = false;
+	}
+	if(entity.isCatcher && Simulator.__last_marko + marcoCoolDown < Simulator.__step_count) {
+		entity.shouts = true;
+		entity.hasShouted = true;
+		entity.nodeOfInterest = null;
+	}
+	
     if (perceptions) {
+		var closest_node = null;
         for (var sensor in perceptions) {
             var perception_log = [];
             for (var index in perceptions[sensor]){
+				if (sensor == 'hear') {
+					var perception = perceptions[sensor][index];
 
-                var perception = perceptions[sensor][index];
+					if (perception['type'] === 'Entity-Object') {
+						perception_log.push(("(" + perceptions[sensor][index]['object']['name']
+							+ " dist " + Math.round(perceptions[sensor][index]['distance'])
+							+ " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
+						
+						if(perceptions[sensor][index]['object']['shouts'] == true) {
+							if(!entity.isCatcher) {		// Target
+								if (perceptions[sensor][index]['object']['isCatcher'] == true )
+									entity.setPosNodeOfInterest(perceptions[sensor][index]['object']['posX'], perceptions[sensor][index]['object']['posY']);
+								entity.shouts = true;
+								entity.hasShouted = true;
+							} else {					// Catcher
+								if (closest_node == null || closest_node['distance'] > perceptions[sensor][index]['distance'])
+									closest_node = perceptions[sensor][index];
+							}
+						}
+					}
 
-                if (perception['type'] === 'Entity-Object')
-                    perception_log.push(("(" + perceptions[sensor][index]['object']['name']
-                        + " dist " + Math.round(perceptions[sensor][index]['distance'])
-                        + " " + Math.round(perceptions[sensor][index]['direction'])+ "°)"));
-
-                if (perception['type'] === 'Edge-Object'){
-                    var intersectionsList = perceptions[sensor][index]['sensor_intersections'];
-                    if (intersectionsList.length === 2) {
-                        Tank.displayEdge(intersectionsList[0], intersectionsList[1], 'yellow');
-                    }
-                    perception_log.push(("(" + perceptions[sensor][index]['object']['name'] + ") "));
-                }
-
+					if (perception['type'] === 'Edge-Object'){
+						var intersectionsList = perceptions[sensor][index]['sensor_intersections'];
+						if (intersectionsList.length === 2) {
+							Tank.displayEdge(intersectionsList[0], intersectionsList[1], 'yellow');
+						}
+						perception_log.push(("(" + perceptions[sensor][index]['object']['name'] + ") "));
+					}
+				}
+				if (entity.isCatcher && sensor == 'feel') {
+					//TODO: endgame
+				}
             }
             Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
+		if(entity.isCatcher && closest_node != null && (entity.nodeOfInterest == null || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
+			entity.setPosNodeOfInterest(closest_node['object']['posX'], closest_node['object']['posY']);
     }
 
     // Idea: suppress any movement reaction to an edge detection

@@ -296,6 +296,7 @@ var Simulator = {
     __interval_ms: 500,     // currently set milliseconds between steps
     __step_count: 0,        // current step count
     __busy: false,          // simulator busy step. prevents new interval execution if still busy
+	__last_marko: -1000,	// last time marko was shouted
 
     init : function(){
         Log.debug('Simulator ready');
