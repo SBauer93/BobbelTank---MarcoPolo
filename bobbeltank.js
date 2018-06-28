@@ -88,7 +88,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 								entity.hasShouted = true;
 							} else {					// Catcher
 								if (closest_node == null || closest_node['distance'] > perceptions[sensor][index]['distance'])
-									closest_node = perceptions[sensor][index];
+                                    closest_node = perceptions[sensor][index];
 							}
 						}
 					}
@@ -101,8 +101,15 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 						perception_log.push(("(" + perceptions[sensor][index]['object']['name'] + ") "));
 					}
 				}
-				if (entity.isCatcher && sensor == 'feel') {
-					//TODO: endgame
+				if (entity.isCatcher && sensor === 'feel') {
+                    var perception = perceptions[sensor][index];
+                    if (perception['type'] === 'Entity-Object') {
+                        Log.error(entity.name + " catches " + perception['object']['name'] + " !!");
+
+                        Simulator.stop();
+                        Simulator.__step_count = 0;
+                        load_bobbel_data();
+                    }
 				}
             }
             Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
@@ -119,22 +126,26 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         } else {
             entity.rotate(-5);
         }
-        entity.move(1);
-    } /* else if (bobbelSeen && bobbelSeen['isCatcher'] === true) {
-        console.warn('Catcher was seen !!!')
+        entity.move(4);
+    } /* else if (entity.isCatcher && entity.nodeOfInterest) {
+        var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);
+        entity.rotate(dir);
+        entity.move(-4);
+    } else if (!entity.isCatcher && entity.nodeOfInterest) {
+        var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);   
         if (Math.random() > 0.5) {
-            entity.rotate(45);
+            entity.rotate(-dir + Math.random() * 45);
         } else {
-            entity.rotate(-45);
+            entity.rotate(-dir - Math.random() * 45);
         }
-        entity.move(-1);
-    } */ else {
-        if (Math.random() > 0.5) {
-            entity.rotate(20);
-        } else {
-            entity.rotate(-20);
-        }
-        entity.move(-1);
+        entity.move(-4); */ // --> TODO: Currently, this doesnt work (All Bobbles disappear in the beginning)
+        else {
+            if (Math.random() > 0.5) {
+                entity.rotate(20);
+            } else {
+                entity.rotate(-20);
+            }
+            entity.move(-4);
     }
 };
 
