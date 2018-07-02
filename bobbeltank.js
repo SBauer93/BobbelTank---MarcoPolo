@@ -87,7 +87,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 								entity.shouts = true;
 								entity.hasShouted = true;
 							} else {					// Catcher
-								if (closest_node == null || closest_node['distance'] > perceptions[sensor][index]['distance'])
+								if (closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance'])
                                     closest_node = perceptions[sensor][index];
 							}
 						}
@@ -114,12 +114,13 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             }
             Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
-		if(entity.isCatcher && closest_node != null && (entity.nodeOfInterest == null || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
+		if(entity.isCatcher && closest_node != null && (entity.nodeOfInterest === null || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
 			entity.setPosNodeOfInterest(closest_node['object']['posX'], closest_node['object']['posY']);
     }
 
-    // Idea: suppress any movement reaction to an edge detection
-    // ==> Edge will be "free-floating" barrier
+    // TODO: when hitting the tank barriers, the bobbel tend to "stick" to the wall
+    // Alternatively, they could reverse their direction and move away from the wall
+
     if (!perceptions) {
         if (Math.random() > 0.5) {
             entity.rotate(5);
@@ -127,25 +128,40 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             entity.rotate(-5);
         }
         entity.move(4);
-    } /* else if (entity.isCatcher && entity.nodeOfInterest) {
+    } else if (entity.isCatcher && entity.nodeOfInterest) {
         var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);
-        entity.rotate(dir);
-        entity.move(-4);
+        if (Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < 150) {
+            var diff = Math.abs(dir*180/Math.PI - entity.direction);
+            var rot_delta = diff >= 180 ? (360 - diff) : -diff;
+            entity.rotate(rot_delta);
+            entity.move(4);
+        } else {
+            if (Math.random() > 0.5) {
+                entity.rotate(5);
+            } else {
+                entity.rotate(-5);
+            }
+            entity.move(4);
+        }
     } else if (!entity.isCatcher && entity.nodeOfInterest) {
         var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);   
-        if (Math.random() > 0.5) {
-            entity.rotate(-dir + Math.random() * 45);
-        } else {
-            entity.rotate(-dir - Math.random() * 45);
-        }
-        entity.move(-4); */ // --> TODO: Currently, this doesnt work (All Bobbles disappear in the beginning)
-        else {
+        if (Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < 150) {
+            var diff = Math.abs(dir*180/Math.PI - entity.direction);
+            var rot_delta = 180 + dir*180/Math.PI - entity.direction;
             if (Math.random() > 0.5) {
-                entity.rotate(20);
+                entity.rotate(rot_delta + Math.random()*5);
             } else {
-                entity.rotate(-20);
+                entity.rotate(rot_delta - Math.random()*5);
             }
-            entity.move(-4);
+            entity.move(4);
+        } else {
+            if (Math.random() > 0.5) {
+                entity.rotate(5);
+            } else {
+                entity.rotate(-5);
+            }
+            entity.move(4);   
+        } 
     }
 };
 
