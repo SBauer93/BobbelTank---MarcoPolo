@@ -825,7 +825,7 @@ function Entity(entity_object, sensors_object) {
     this.nodeOfInterest = [0, 0];		// current pos of the node, which affects the next movement, e.g. the catcher
     this.shouts = false;				// Signal the shouting to other entities 
      
-    var hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
+    this.hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
     //only sets position if input pos is array with length 2
     var pos = entity_object['position'];
     if (Array.isArray(pos) && pos.length === 2) {
@@ -885,6 +885,10 @@ Entity.prototype.move = function(distance) {
 
         this.posX = Math.max(this.restrictedXmin, Math.min(newPosX, this.restrictedXmax));
         this.posY = Math.max(this.restrictedYmin, Math.min(newPosY, this.restrictedYmax));
+
+        if (this.posX !== newPosX || this.posY !== newPosY) {
+            this.rotate(90);
+        }
     } else {
         this.posX = newPos[0];
         this.posY = newPos[1];

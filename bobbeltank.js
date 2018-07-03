@@ -62,9 +62,10 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 			entity.shouts = false;
 	}
 	if(entity.isCatcher && Simulator.__last_marko + marcoCoolDown < Simulator.__step_count) {
-		entity.shouts = true;
+        entity.shouts = true;
+        Log.debug('MARCO !');
 		entity.hasShouted = true;
-		entity.nodeOfInterest = null;
+        entity.nodeOfInterest = null;
 	}
 	
     if (perceptions) {
@@ -82,9 +83,11 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 						
 						if(perceptions[sensor][index]['object']['shouts'] == true) {
 							if(!entity.isCatcher) {		// Target
-								if (perceptions[sensor][index]['object']['isCatcher'] == true )
+								if (perceptions[sensor][index]['object']['isCatcher'] == true ) {
 									entity.setPosNodeOfInterest(perceptions[sensor][index]['object']['posX'], perceptions[sensor][index]['object']['posY']);
-								entity.shouts = true;
+                                    Log.debug('POLO !');
+                                    }    
+                                entity.shouts = true;
 								entity.hasShouted = true;
 							} else {					// Catcher
 								if (closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance'])
@@ -130,7 +133,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         entity.move(4);
     } else if (entity.isCatcher && entity.nodeOfInterest) {
         var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);
-        if (Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < 150) {
+        if (Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < 200) {
             var diff = Math.abs(dir*180/Math.PI - entity.direction);
             var rot_delta = diff >= 180 ? (360 - diff) : -diff;
             entity.rotate(rot_delta);
