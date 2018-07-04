@@ -51,7 +51,7 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
  */
 var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
     
-	var marcoCoolDown = 500;
+    var marcoCoolDown = 500;
 	
 	//Shout Marco-Polo
 	
@@ -117,7 +117,9 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             }
             // Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
-		if(entity.isCatcher && closest_node != null && (entity.nodeOfInterest === null || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
+        if(entity.isCatcher && closest_node != null 
+            && (entity.nodeOfInterest === null 
+                || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
 			entity.setPosNodeOfInterest(closest_node['object']['posX'], closest_node['object']['posY']);
     }
 

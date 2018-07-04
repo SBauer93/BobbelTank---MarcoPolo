@@ -44,7 +44,7 @@ var bobbel_entities =
             image: "images/150x150_bubble.png",
             position: [choosePositions(450), choosePositions(730)],
             direction: 0,
-            perceptions : ["see", "hear", "feel"],
+            perceptions : ["hear", "feel"],
             color: "green",
             isCatcher: true
         }, {
@@ -132,7 +132,7 @@ var bobbel_sensors = {
         perimeter: [[-1500,1500], [1500,1500], [1500,-1500], [-1500,-1500]]
     },
     feel: {
-        perimeter: [[0,0],[0, 30], [30, 0], [0, -30], [-30, 0]],
+        perimeter: [[0, 40], [40, 0], [0, -40], [-40, 0]],
         color : "orange"
     },
     pirate: {
