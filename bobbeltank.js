@@ -115,7 +115,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
                     }
 				}
             }
-            Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
+            // Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
 		if(entity.isCatcher && closest_node != null && (entity.nodeOfInterest === null || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
 			entity.setPosNodeOfInterest(closest_node['object']['posX'], closest_node['object']['posY']);
@@ -132,7 +132,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         }
         entity.move(4);
     } else if (entity.isCatcher && entity.nodeOfInterest) {
-        var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);
+        var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1], 15);
         if (Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < 200) {
             var diff = Math.abs(dir*180/Math.PI - entity.direction);
             var rot_delta = diff >= 180 ? (360 - diff) : -diff;
@@ -147,7 +147,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             entity.move(4);
         }
     } else if (!entity.isCatcher && entity.nodeOfInterest) {
-        var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);   
+        var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1], 20);   
         if (Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < 150) {
             var diff = Math.abs(dir*180/Math.PI - entity.direction);
             var rot_delta = 180 + dir*180/Math.PI - entity.direction;

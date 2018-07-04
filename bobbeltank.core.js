@@ -904,10 +904,15 @@ Entity.prototype.setPosNodeOfInterest = function(posX, posY) {
 /** 
  * Called by the catcher and, initially, by the other bobbels, too. Used to direct movement.
 */
-Entity.prototype.estimateDirection = function(posX2, posY2) {
+Entity.prototype.estimateDirection = function(posX2, posY2, certainty) {
     var posX1 = this.posX;
     var posY1 = this.posY;
-    return Math.asin((posY2-posY1)/Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2));
+
+    var factor = Math.random();
+
+    var es_posX2 = factor > 0.5 ? posX2 + factor*certainty : posX2 - factor*certainty;
+    var es_posY2 = factor > 0.5 ? posY2 + factor*certainty : posY2 - factor*certainty; 
+    return Math.asin((es_posY2-posY1)/Entity.__distanceBetweenTwoPoints(posX1, posY1, es_posX2, es_posY2));
 }
 
 /** 
