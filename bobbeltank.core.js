@@ -879,12 +879,22 @@ function Entity(entity_object, sensors_object) {
 Entity.prototype.move = function(distance) {
     var newPos = Entity.__rotateAroundOrigin(this.posX + distance, this.posY, this.posX, this.posY, this.direction);
 
-    if(this.movementRestricted) {
+    if(this.movementRestricted && this.isCatcher === false) {
         var newPosX = newPos[0];
         var newPosY = newPos[1];
 
         this.posX = Math.max(this.restrictedXmin, Math.min(newPosX, this.restrictedXmax));
         this.posY = Math.max(this.restrictedYmin, Math.min(newPosY, this.restrictedYmax));
+
+        if (this.posX !== newPosX || this.posY !== newPosY) {
+            this.rotate(90);
+        }
+    } else if (this.movementRestricted && this.isCatcher === true) {
+        var newPosX = newPos[0];
+        var newPosY = newPos[1];
+
+        this.posX = Math.max(120, Math.min(newPosX, 1300));
+        this.posY = Math.max(120, Math.min(newPosY, 800));
 
         if (this.posX !== newPosX || this.posY !== newPosY) {
             this.rotate(90);
