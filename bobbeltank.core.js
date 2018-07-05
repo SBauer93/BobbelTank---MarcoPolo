@@ -296,7 +296,8 @@ var Simulator = {
     __interval_ms: 500,     // currently set milliseconds between steps
     __step_count: 0,        // current step count
     __busy: false,          // simulator busy step. prevents new interval execution if still busy
-	__last_marko: -1000,	// last time marko was shouted
+    __last_marko: -1000,	// last time marko was shouted
+    __next_Catcher: "Wilson",   // Choosen catcher for the next round
 
     init : function(){
         Log.debug('Simulator ready');
@@ -736,6 +737,26 @@ var EntityCollection = {
         return EntityCollection.__entities;
     },
 
+    checkFishOutWater: function() {
+        var entities = getEntities();
+        var outsideEntities = [];
+        for (entity in entities) {
+            if(entity.posX < 120 || entity.posX > 1300 || entity.posY < 120 || entity > 800) {
+                outsideEntities.push(entity);
+            }
+        }
+
+        var nextCatcher = outsideEntities[Math.floor(Math.random() * (outsideEntities.length-1))];
+        Simulator.__next_Catcher = nextCatcher.name;
+
+        if (outsideEntities.length > 0) {
+            Simulator.stop();
+            Simulator.__step_count = 0;
+            Simulator.__last_marko = -1000;
+            load_bobbel_data();    
+        }
+    },
+
     /**
      * Returns list of positions for all entities [[x,y],[x,y],[x,y],...]
      * @returns {Array}
@@ -822,7 +843,7 @@ function Entity(entity_object, sensors_object) {
     this.image_src = entity_object['image'];
     this.movementRestricted = false;
     this.color = entity_object['color'];
-    this.isCatcher = entity_object['isCatcher'];
+    this.isCatcher = this.name === Simulator.__next_Catcher ? true : false;
     this.nodeOfInterest = [0, 0];		// current pos of the node, which affects the next movement, e.g. the catcher
     this.shouts = false;				// Signal the shouting to other entities
 
