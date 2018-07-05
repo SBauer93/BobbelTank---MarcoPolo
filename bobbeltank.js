@@ -175,11 +175,6 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
     }
 };
 
-var ruffPosition = function(object){
-	//TODO: implement
-	return pos;
-}
-
 /**
  * This function is not meant to be called by you. It is called automatically for finalization at the end of every simulation step. Changes to visualization are performed afterwards
  * Perform you finalization code here if you like!
