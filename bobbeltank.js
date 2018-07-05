@@ -53,7 +53,13 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
     
     var marcoCoolDown = 500;
 	var marcoHearRange = 300;
-	var poloHearRange = 250;
+    var poloHearRange = 250;
+
+    var marcoFac = 20;
+    var poloFac = 25
+    
+    var marcoUncertainty = Math.random() > 0.5 ? Math.random() * marcoFac : -Math.random() * marcoFac;
+    var poloUncertainty = Math.random() > 0.5 ? Math.random() * poloFac : -Math.random() * poloFac;  
 	
 	//Shout Marco-Polo
 	
@@ -90,13 +96,19 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 									Log.debug('POLO !');
 									entity.shouts = true;
 									entity.hasShouted = true;
-									if (perceptions[sensor][index]['distance'] < poloHearRange)
-										entity.setPosNodeOfInterest(perceptions[sensor][index]['object']['posX'], perceptions[sensor][index]['object']['posY']);
+									if (perceptions[sensor][index]['distance'] < poloHearRange) {
+                                        var posX = perceptions[sensor][index]['object']['posX'];
+                                        var posY = perceptions[sensor][index]['object']['posY'];
+
+                                        var est_pos = entity.roughPosition(posX, posY, marcoFac, poloFac);
+                                        entity.setPosNodeOfInterest(est_pos[0], est_pos[1]);
+                                    }
 									else
 										entity.nodeOfInterest = null;
                                 }
 							} else					// Catcher
-								if ((closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance']) && perceptions[sensor][index]['distance'] < marcoHearRange)
+                                if ((closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance'] + marcoUncertainty ) 
+                                        && perceptions[sensor][index]['distance'] + marcoUncertainty < marcoHearRange)
                                     closest_node = perceptions[sensor][index];
 						}
 					}
@@ -124,8 +136,10 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         }
         if(entity.isCatcher && closest_node != null 
             && (entity.nodeOfInterest === null 
-                || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
-			entity.setPosNodeOfInterest(ruffPosition(closest_node['object'], closest_node['object']));
+                || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance'])) {
+                    var pos = entity.roughPosition(closest_node['object']['posX'], closest_node['object']['posY'], marcoFac, poloFac);
+                    entity.setPosNodeOfInterest(pos[0], pos[1]);
+                }
     }
 
     // TODO: when hitting the tank barriers, the bobbel tend to "stick" to the wall
@@ -140,7 +154,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         entity.move(4);
     } else if (entity.isCatcher) {
         if (entity.nodeOfInterest != null) {
-			var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1], 15);
+			var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]);
             var diff = Math.abs(dir*180/Math.PI - entity.direction);
             var rot_delta = diff >= 180 ? (360 - diff) : -diff;
             entity.rotate(rot_delta);
@@ -155,7 +169,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         }
     } else if (!entity.isCatcher) {  
         if (entity.nodeOfInterest != null) {
-			var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1], 20); 
+			var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1]); 
             var diff = Math.abs(dir*180/Math.PI - entity.direction);
             var rot_delta = 180 + dir*180/Math.PI - entity.direction;
             if (Math.random() > 0.5) {
@@ -174,11 +188,6 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         } 
     }
 };
-
-var ruffPosition = function(object){
-	//TODO: implement
-	return pos;
-}
 
 /**
  * This function is not meant to be called by you. It is called automatically for finalization at the end of every simulation step. Changes to visualization are performed afterwards
