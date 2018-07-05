@@ -25,7 +25,7 @@
  * @namespace
  */
 var Tank = {
-    
+
     visible_canvas: null,
     visible_canvas_ctx : null,
     scratch_canvas: null,
@@ -358,7 +358,7 @@ var Simulator = {
             var coordinates = EntityCollection.getPositions().concat(EdgeCollection.getEndpoints());
             var perceivableObjects = EntityCollection.getEntities().concat(EdgeCollection.getEdges());
             var perceptions = entity.getPerceptions(coordinates, perceivableObjects);
-            
+
             perform_simulation_step_on_entity(entity, perceptions, Simulator.__step_count);
         }
 
@@ -399,6 +399,7 @@ var ControlPanel = {
         $('#restart_btn').click(function(){
             Simulator.stop();
             Simulator.__step_count = 0;
+			Simulator.__last_marko = -1000;
             load_bobbel_data();
         });
 
@@ -823,8 +824,8 @@ function Entity(entity_object, sensors_object) {
     this.color = entity_object['color'];
     this.isCatcher = entity_object['isCatcher'];
     this.nodeOfInterest = [0, 0];		// current pos of the node, which affects the next movement, e.g. the catcher
-    this.shouts = false;				// Signal the shouting to other entities 
-     
+    this.shouts = false;				// Signal the shouting to other entities
+
     this.hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
     //only sets position if input pos is array with length 2
     var pos = entity_object['position'];
@@ -911,16 +912,15 @@ Entity.prototype.setPosNodeOfInterest = function(posX, posY) {
     this.nodeOfInterest = [posX, posY];
 }
 
-/** 
+/**
  * Called by the catcher and, initially, by the other bobbels, too. Used to direct movement.
 */
-Entity.prototype.estimateDirection = function(posX2, posY2) {
+Entity.prototype.estimateDirection = function(posX2, posY2, certainty) {
     var posX1 = this.posX;
     var posY1 = this.posY;
 
     return Math.asin((posY2-posY1)/Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2));
 }
-
 Entity.prototype.roughPosition = function(posX, posY, marcoFactor, poloFactor){
     var factor = this.isCatcher ? marcoFactor : poloFactor;
     var sign = Math.random() > 0.5 ? 1 : -1;
@@ -930,11 +930,29 @@ Entity.prototype.roughPosition = function(posX, posY, marcoFactor, poloFactor){
 
     var pos = [est_posX, est_posY];
 	return pos;
+}/**
+
+ * Called by the catcher and, initially, by the other bobbels, too. Used to get direction.
+*/
+Entity.prototype.getDirDelta = function() {
+	var dir = this.estimateDirection(this.nodeOfInterest[0], this.nodeOfInterest[1], 20);
+	var diff = Math.abs(dir - this.direction);
+
+	if(this.isCatcher)
+		return diff >= 180 ? (360 - diff) : -diff;
+	else {
+		dir = 180 + dir - this.direction;
+		if (Math.abs(dir + 45) < Math.abs(dir + 45))
+			dir += 45;
+		else
+			dir -= 45;
+		return dir;
+	}
 }
 
-/** 
+/**
  * Used by the catcher to find next promising 'target'.
- * HINT: Already implemented by Marten, 
+ * HINT: Already implemented by Marten,
 */
 /* Entity.prototype.findClosestNode = function(entities) {
     var minDist = 3000; // Set arbitrary large start reference
@@ -947,8 +965,8 @@ Entity.prototype.roughPosition = function(posX, posY, marcoFactor, poloFactor){
         var posY2 = entity.posY + Math.floor(Math.random() * 10);
 
         // Estimating distance through hearing is not very precise
-        var dist = Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2) 
-                    + Math.floor(Math.random() * 20); 
+        var dist = Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2)
+                    + Math.floor(Math.random() * 20);
 
         if (dist < minDist) {
             minDist = dist;
@@ -1046,7 +1064,7 @@ Entity.prototype.updateSensors = function(){
  * If nothing is perceived returns null
  *
  * perceptions
- *      
+ *
  *      {
  *          sensorname_1: [
  *              {
@@ -1057,13 +1075,13 @@ Entity.prototype.updateSensors = function(){
  *                  "direction" // direction to perceived object (corresponding to own direction)  (optional if Entity-Object)
  *              }, {
  *                  ...
- *              }, 
+ *              },
  *              ...
  *          ],
  *          sensorname_2: [...],
  *          ...
  *      }
- *      
+ *
  * @param {array} perceivable_positions_list list of perceivable positions
  * @param {array} perceivable_objects_list  list of objects at these positions
  * @returns {String}
@@ -1302,8 +1320,8 @@ Entity.__doEdgesIntersect = function(posA1, posA2, posB1, posB2) {
  */
 Entity.__getIntersectionPoint = function(edge1_start, edge1_end, edge2_start, edge2_end) {
 
-    var denominator, a, b, numerator1, numerator2, 
-    
+    var denominator, a, b, numerator1, numerator2,
+
         denominator = ((edge2_end[1] - edge2_start[1]) * (edge1_end[0] - edge1_start[0])) - ((edge2_end[0] - edge2_start[0]) * (edge1_end[1] - edge1_start[1]));
     if (denominator == 0) {
         return null;
