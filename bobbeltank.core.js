@@ -737,24 +737,26 @@ var EntityCollection = {
         return EntityCollection.__entities;
     },
 
-    checkFishOutWater: function() {
-        var entities = getEntities();
+    checkFishOutOfWater: function() {
+        var entities = EntityCollection.getEntities();
         var outsideEntities = [];
-        for (entity in entities) {
+        for (var entity in entities) {
             if(entity.posX < 120 || entity.posX > 1300 || entity.posY < 120 || entity > 800) {
                 outsideEntities.push(entity);
             }
         }
 
-        var nextCatcher = outsideEntities[Math.floor(Math.random() * (outsideEntities.length-1))];
-        Simulator.__next_Catcher = nextCatcher.name;
-
         if (outsideEntities.length > 0) {
+            var nextCatcher = outsideEntities[Math.floor(Math.random() * (outsideEntities.length-1))];
+            Simulator.__next_Catcher = nextCatcher.name;
+            
             Simulator.stop();
             Simulator.__step_count = 0;
             Simulator.__last_marko = -1000;
             load_bobbel_data();    
         }
+
+        return;
     },
 
     /**

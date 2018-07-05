@@ -168,7 +168,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 			if(entity.movementRestricted) {
 				EntityCollection.checkFishOutOfWater();
 				if(entity.isCatcher)						//Check if Round continues
-					entity.nodeOfInterest = null;
+                    entity.nodeOfInterest = null;
+            }
         } else {
             if (Math.random() > 0.5) {
                 entity.rotate(5);
