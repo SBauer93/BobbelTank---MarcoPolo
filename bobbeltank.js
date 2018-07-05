@@ -51,7 +51,7 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
  */
 var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
     
-    var marcoCoolDown = 500;
+    var marcoCoolDown = 250;
 	var marcoHearRange = 300;
 	var poloHearRange = 250;
 	
@@ -86,7 +86,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 						
 						if(perceptions[sensor][index]['object']['shouts'] == true) {
 							if(!entity.isCatcher) {		// Target
-								if (perceptions[sensor][index]['object']['isCatcher'] == true) {
+								if (perceptions[sensor][index]['object']['isCatcher']) {
 									Log.debug('POLO !');
 									entity.shouts = true;
 									entity.hasShouted = true;
@@ -116,7 +116,15 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
                         Simulator.stop();
                         Simulator.__step_count = 0;
+						Simulator.__last_marko = -1000;
                         load_bobbel_data();
+                    }
+				}
+				if (!entity.isCatcher && sensor === 'see') {
+                    var perception = perceptions[sensor][index];
+                    if (perception['type'] === 'Entity-Object' && perceptions[sensor][index]['object']['isCatcher']) {
+                        Log.error(entity.name + " sees " + perception['object']['name'] + " !!");
+						entity.setPosNodeOfInterest(perceptions[sensor][index]['object']['posX'], perceptions[sensor][index]['object']['posY']);
                     }
 				}
             }
@@ -125,7 +133,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         if(entity.isCatcher && closest_node != null 
             && (entity.nodeOfInterest === null 
                 || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance']))
-			entity.setPosNodeOfInterest(ruffPosition(closest_node['object'], closest_node['object']));
+			entity.nodeOfInterest = ruffPosition(closest_node['object'], closest_node['object']);
     }
 
     // TODO: when hitting the tank barriers, the bobbel tend to "stick" to the wall
@@ -140,9 +148,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         entity.move(4);
     } else if (entity.isCatcher) {
         if (entity.nodeOfInterest != null) {
-			var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1], 15);
-            var diff = Math.abs(dir*180/Math.PI - entity.direction);
-            var rot_delta = diff >= 180 ? (360 - diff) : -diff;
+            var rot_delta = entity.getDirDelta();
             entity.rotate(rot_delta);
             entity.move(4);
         } else {
@@ -155,14 +161,11 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         }
     } else if (!entity.isCatcher) {  
         if (entity.nodeOfInterest != null) {
-			var dir = entity.estimateDirection(entity.nodeOfInterest[0], entity.nodeOfInterest[1], 20); 
-            var diff = Math.abs(dir*180/Math.PI - entity.direction);
-            var rot_delta = 180 + dir*180/Math.PI - entity.direction;
-            if (Math.random() > 0.5) {
+            var rot_delta = entity.getDirDelta();
+            if (Math.random() > 0.5)
                 entity.rotate(rot_delta + Math.random()*5);
-            } else {
+            else
                 entity.rotate(rot_delta - Math.random()*5);
-            }
             entity.move(4);
         } else {
             if (Math.random() > 0.5) {
@@ -177,7 +180,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
 var ruffPosition = function(object){
 	//TODO: implement
-	return pos;
+	return [object['posX'], object['posY']];
 }
 
 /**

@@ -399,6 +399,7 @@ var ControlPanel = {
         $('#restart_btn').click(function(){
             Simulator.stop();
             Simulator.__step_count = 0;
+			Simulator.__last_marko = -1000;
             load_bobbel_data();
         });
 
@@ -910,9 +911,28 @@ Entity.prototype.estimateDirection = function(posX2, posY2, certainty) {
 
     var factor = Math.random();
 
-    posX2 = factor > 0.5 ? posX2 + factor*certainty : posX2 - factor*certainty;
-    posY2 = factor > 0.5 ? posY2 + factor*certainty : posY2 - factor*certainty; 
-    return Math.asin((es_posY2-posY1)/Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2));
+    //posX2 = factor > 0.5 ? posX2 + factor*certainty : posX2 - factor*certainty;
+    //posY2 = factor > 0.5 ? posY2 + factor*certainty : posY2 - factor*certainty; 
+    return Math.asin((posY2-posY1)/Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2)) * 180/Math.PI;
+}
+
+/** 
+ * Called by the catcher and, initially, by the other bobbels, too. Used to get direction.
+*/
+Entity.prototype.getDirDelta = function() {
+	var dir = this.estimateDirection(this.nodeOfInterest[0], this.nodeOfInterest[1], 20); 
+	var diff = Math.abs(dir - this.direction);
+	
+	if(this.isCatcher)
+		return diff >= 180 ? (360 - diff) : -diff;
+	else {
+		dir = 180 + dir - this.direction;
+		if (Math.abs(dir + 45) < Math.abs(dir + 45))
+			dir += 45;
+		else
+			dir -= 45;
+		return dir;
+	}
 }
 
 /** 
