@@ -135,7 +135,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 				if (!entity.isCatcher && sensor === 'see') {
                     var perception = perceptions[sensor][index];
                     if (perception['type'] === 'Entity-Object' && perceptions[sensor][index]['object']['isCatcher']) {
-                        Log.error(entity.name + " sees " + perception['object']['name'] + " !!");
+                        Log.debug(entity.name + " sees " + perception['object']['name'] + " !!");
 						entity.setPosNodeOfInterest(perceptions[sensor][index]['object']['posX'], perceptions[sensor][index]['object']['posY']);
                     }
 				}
@@ -146,7 +146,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             && (entity.nodeOfInterest === null 
                 || Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) > closest_node['distance'])) {
                     var pos = entity.roughPosition(closest_node['object']['posX'], closest_node['object']['posY'], marcoFac, poloFac);
-                    entity.setPosNodeOfInterest(pos[0], pos[1]);    	}
+                    entity.setPosNodeOfInterest(pos[0], pos[1]);
+		}
     }
 
     // TODO: when hitting the tank barriers, the bobbel tend to "stick" to the wall
@@ -161,8 +162,13 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         entity.move(4);
     } else if (entity.isCatcher) {
         if (entity.nodeOfInterest != null) {
-			var rot_delta = entity.getDirDelta();            entity.rotate(rot_delta);
+			var rot_delta = entity.getDirDelta();
+			entity.rotate(rot_delta);
             entity.move(4);
+			if(entity.movementRestricted) {
+				EntityCollection.checkFishOutOfWater();
+				if(entity.isCatcher)						//Check if Round continues
+					entity.nodeOfInterest = null;
         } else {
             if (Math.random() > 0.5) {
                 entity.rotate(5);
