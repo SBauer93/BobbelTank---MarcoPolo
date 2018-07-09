@@ -125,6 +125,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
                     var perception = perceptions[sensor][index];
                     if (perception['type'] === 'Entity-Object') {
                         Log.error(entity.name + " catches " + perception['object']['name'] + " !!");
+                        Simulator.__next_Catcher = perception['object']['name'];
 
                         Simulator.stop();
                         Simulator.__step_count = 0;

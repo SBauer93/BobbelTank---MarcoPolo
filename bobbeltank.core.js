@@ -309,6 +309,7 @@ var Simulator = {
      * @param timespan time between simulation steps in ms
      */
     setInterval : function(timespan){
+        Log.debug("CATCHER FOR THIS ROUND: " + Simulator.__next_Catcher);
         Simulator.stop();
         Simulator.__interval_ref = setInterval(Simulator.performStep, timespan);
         Simulator.__interval_ms = timespan;
@@ -740,20 +741,25 @@ var EntityCollection = {
     checkFishOutOfWater: function() {
         var entities = EntityCollection.getEntities();
         var outsideEntities = [];
-        for (var entity in entities) {
-            if(entity.posX < 120 || entity.posX > 1300 || entity.posY < 120 || entity > 800) {
-                outsideEntities.push(entity);
+        for (var index in entities) {
+            Log.debug("Check entity: " +  entities[index].name);
+            // Check if entities is outside playground
+            if(entities[index].posX < 120 || entities[index].posX > 1300 || entities[index].posY < 120 || entities[index].posY > 800) {
+                Log.debug("*******entities pushed: " +  entities[index].name);
+                outsideEntities.push(entities[index]);
             }
         }
 
         if (outsideEntities.length > 0) {
             var nextCatcher = outsideEntities[Math.floor(Math.random() * (outsideEntities.length-1))];
+            Log.debug("NEXT CATCHER: " + nextCatcher.name);
             Simulator.__next_Catcher = nextCatcher.name;
-            
+
+            Log.error(nextCatcher.name + " was out of water and choosen as next catcher !!");
             Simulator.stop();
             Simulator.__step_count = 0;
             Simulator.__last_marko = -1000;
-            load_bobbel_data();    
+            load_bobbel_data();   
         }
 
         return;
@@ -853,7 +859,7 @@ function Entity(entity_object, sensors_object) {
     //only sets position if input pos is array with length 2
     var pos = entity_object['position'];
     if (Array.isArray(pos) && pos.length === 2) {
-        if (entity_object['isCatcher'] === true) {
+        if (this.isCatcher === true) {
             // If bobbel is choosen as catcher, position him approx. in the middle of the area.
             this.posX = 590;
             this.posY = 500;
@@ -867,6 +873,12 @@ function Entity(entity_object, sensors_object) {
 
     //transfer definitions of attached sensors into entity (only if definitions exist)
     var perceptionTags = entity_object['perceptions'];
+    var index = perceptionTags.indexOf("see");
+    if(index > -1 && this.isCatcher === true) {
+        perceptionTags.splice(index, 1);
+    } else if (index === -1 && this.isCatcher === false) {
+        perceptionTags.unshift('see');
+    }
     this.__sensor_perimeters = {};
     this.__rotated_sensor_perimeters = {};
     this.sensor_colors = {};
@@ -876,7 +888,8 @@ function Entity(entity_object, sensors_object) {
             this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
             this.__rotated_sensor_direction = 0;
-            if (entity_object['isCatcher'] === true && tag !== 'hear') {
+            
+            if (this.isCatcher === true && tag !== 'hear') {
                 // If bobbel is choosen as catcher, mark his perceptions with specific color.
                 this.sensor_colors[tag] = "red";
             } else {

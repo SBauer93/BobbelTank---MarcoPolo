@@ -44,7 +44,7 @@ var bobbel_entities =
             image: "images/150x150_bubble.png",
             position: [choosePositions(450), choosePositions(730)],
             direction: 0,
-            perceptions : ["hear", "feel"],
+            perceptions : ["see", "hear", "feel"],
             color: "green",
             isCatcher: true
         }, {
