@@ -297,6 +297,7 @@ var Simulator = {
     __step_count: 0,        // current step count
     __busy: false,          // simulator busy step. prevents new interval execution if still busy
     __last_marko: -1000,	// last time marko was shouted
+	__last_catch: -1000,
     __next_Catcher: "Wilson",   // Choosen catcher for the next round
 
     init : function(){
@@ -402,7 +403,8 @@ var ControlPanel = {
             Simulator.stop();
             Simulator.__step_count = 0;
 			Simulator.__last_marko = -1000;
-            load_bobbel_data();
+			Simulator.__last_catch = -1000;
+			load_bobbel_data();
         });
 
         $('#disableAllCheck').change(function(){
@@ -738,7 +740,7 @@ var EntityCollection = {
         return EntityCollection.__entities;
     },
 
-    checkFishOutOfWater: function() {
+    checkFishOutOfWater: function(currentCatcher) {
         var entities = EntityCollection.getEntities();
         var outsideEntities = [];
         for (var index in entities) {
@@ -752,14 +754,15 @@ var EntityCollection = {
 
         if (outsideEntities.length > 0) {
             var nextCatcher = outsideEntities[Math.floor(Math.random() * (outsideEntities.length-1))];
-            Log.debug("NEXT CATCHER: " + nextCatcher.name);
-            Simulator.__next_Catcher = nextCatcher.name;
+			
+			EntityCollection.catchEntity(nextCatcher);
+			/*Simulator.__next_Catcher = nextCatcher.name;
 
             Log.error(nextCatcher.name + " was out of water and choosen as next catcher !!");
             Simulator.stop();
             Simulator.__step_count = 0;
             Simulator.__last_marko = -1000;
-            load_bobbel_data();   
+            load_bobbel_data();   */
         }
 
         return;
@@ -795,7 +798,22 @@ var EntityCollection = {
         for (var i in EntityCollection.__entities)
             if (EntityCollection.__entities[i]['uuid'] === uuid)
                 return EntityCollection.__entities[i];
-    }
+    },
+	
+	catchEntity: function(entity) {
+		Log.error("NEXT CATCHER: " + entity.name);
+		Simulator.__last_catch = Simulator.__step_count;
+		
+        for (var i in EntityCollection.__entities) {
+			EntityCollection.__entities[i].isCatcher = false;
+			EntityCollection.__entities[i].defineSensors();
+		}
+		
+		entity.isCatcher = true;
+		entity.defineSensors();
+		entity.hasShouted = true;
+		entity.shouts = true;
+	}
 };
 
 /**
@@ -856,10 +874,12 @@ function Entity(entity_object, sensors_object) {
     this.shouts = false;				// Signal the shouting to other entities
     this.speed = entity_object['speed'];
     this.precision = entity_object['precision'];
+	this.perceptions = entity_object['perceptions'];
     this.sight = entity_object['sight'];
     this.panic = false;
     this.edgeDetected = false;
     this.isOutside = false;
+	this.sensors_object = sensors_object;
 
     this.hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
     //only sets position if input pos is array with length 2
@@ -882,35 +902,7 @@ function Entity(entity_object, sensors_object) {
     this.isOutside = (this.posX < 120 || this.posX > 1300 || this.posY < 120 || this.posY > 800);
 
     //transfer definitions of attached sensors into entity (only if definitions exist)
-    var perceptionTags = entity_object['perceptions'];
-    var index = perceptionTags.indexOf("see");
-    if(index > -1 && this.isCatcher === true) {
-        perceptionTags.splice(index, 1);
-    } else if (index === -1 && this.isCatcher === false) {
-        perceptionTags.unshift('see');
-    }
-    this.__sensor_perimeters = {};
-    this.__rotated_sensor_perimeters = {};
-    this.sensor_colors = {};
-    for (var tag_i in perceptionTags) {
-        var tag = perceptionTags[tag_i];
-        if (sensors_object[tag]){
-            this.__sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
-            this.__rotated_sensor_perimeters[tag] = sensors_object[tag]['perimeter'];
-            this.__rotated_sensor_direction = 0;
-            
-            if (this.isCatcher === true && tag !== 'hear') {
-                // If bobbel is choosen as catcher, mark his perceptions with specific color.
-                this.sensor_colors[tag] = "red";
-            } else {
-                this.sensor_colors[tag] = sensors_object[tag]['color'];
-            }
-        }
-
-    }
-    this.sensor_polygons = {};
-    this.polyk_sensor_polygons = {};
-    this.updateSensors();
+	this.defineSensors();
 
     //set unique ID
     function s4() {
@@ -986,8 +978,12 @@ Entity.prototype.roughPosition = function(posX, posY, marcoFactor, poloFactor){
 
  * Called by the catcher and, initially, by the other bobbels, too. Used to get direction.
 */
-Entity.prototype.getDirDelta = function() {
-	var dir = this.estimateDirection(this.nodeOfInterest[0], this.nodeOfInterest[1], 20);
+Entity.prototype.getDirDelta = function(x, y) {
+	if(x == undefined) {
+		x = this.nodeOfInterest[0]
+		y = this.nodeOfInterest[1]
+	}
+	var dir = this.estimateDirection(x, y, 20);
 	var diff = Math.abs(dir - this.direction);
 
 	if(this.isCatcher)
@@ -1065,6 +1061,42 @@ Entity.prototype.clearMovementBounds = function() {
     this.restrictedYmin = null;
     this.restrictedYmax = null;
 };
+
+
+/**
+ * transfer definitions of attached sensors into entity (only if definitions exist)
+ */
+Entity.prototype.defineSensors = function() {
+	var perceptionTags = this.perceptions;
+	var index = perceptionTags.indexOf("see");
+	if(index > -1 && this.isCatcher === true) {
+		perceptionTags.splice(index, 1);
+	} else if (index === -1 && this.isCatcher === false) {
+		perceptionTags.unshift('see');
+	}
+	this.__sensor_perimeters = {};
+	this.__rotated_sensor_perimeters = {};
+	this.sensor_colors = {};
+	for (var tag_i in perceptionTags) {
+		var tag = perceptionTags[tag_i];
+		if (this.sensors_object[tag]){
+			this.__sensor_perimeters[tag] = this.sensors_object[tag]['perimeter'];
+			this.__rotated_sensor_perimeters[tag] = this.sensors_object[tag]['perimeter'];
+			this.__rotated_sensor_direction = 0;
+			
+			if (this.isCatcher === true && tag !== 'hear') {
+				// If bobbel is choosen as catcher, mark his perceptions with specific color.
+				this.sensor_colors[tag] = "red";
+			} else {
+				this.sensor_colors[tag] = this.sensors_object[tag]['color'];
+			}
+		}
+
+	}
+	this.sensor_polygons = {};
+	this.polyk_sensor_polygons = {};
+	this.updateSensors();
+}
 
 /**
  * Updates entities sensor_polygons etc. according to position and direction properties

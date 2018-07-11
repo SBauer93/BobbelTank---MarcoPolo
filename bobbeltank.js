@@ -52,23 +52,48 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
 var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
     
     var marcoCoolDown = 250;
+	var catchedCoolDown = 300;
 	var marcoHearRange = 300;
 	var poloHearRange = 350;
 	
     var marcoFac = 20;
-    var poloFac = 25
-    
+    var poloFac = 25;
     var marcoUncertainty = Math.random() > 0.5 ? Math.random() * marcoFac : -Math.random() * marcoFac;
     var poloUncertainty = Math.random() > 0.5 ? Math.random() * poloFac : -Math.random() * poloFac;  
 	
-	//Shout Marco-Polo
-	
+	//Stop Shouting
 	if(entity.shouts) {
 		if(entity.hasShouted)
 			entity.hasShouted = false;
 		else
 			entity.shouts = false;
 	}
+	
+	//Idle if new marco within cooldown
+	if(entity.isCatcher && Simulator.__last_catch + catchedCoolDown > step_count) {
+		//TODO: Bring fish into water
+		var bubbleRadius = 15;
+		var insideX = entity.posX;
+		var insideY = entity.posY;
+		if(insideX < 120 || insideX > 1300 || insideY < 120 || insideY > 800) {
+			if (insideX < 120)
+				insideX = 120 + bubbleRadius;
+			if (insideX > 1300)
+				insideX = 1300 - bubbleRadius;
+			if (insideY < 120)
+				insideY = 120 + bubbleRadius;
+			if (insideY > 800)
+				insideY = 800 - bubbleRadius;
+			
+			var rot_delta = entity.getDirDelta(insideX, insideY);
+			entity.rotate(rot_delta);
+			entity.move(entity.speed);
+		}
+		
+		return;
+	}
+	
+	//Shout Marco
 	if(entity.isCatcher && Simulator.__last_marko + marcoCoolDown < step_count) {
         entity.shouts = true;
         Log.debug('MARCO ! (at ' + step_count + ')');
@@ -128,13 +153,15 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 				if (entity.isCatcher && sensor === 'feel') {
                     var perception = perceptions[sensor][index];
                     if (perception['type'] === 'Entity-Object') {
-                        Log.error(entity.name + " catches " + perception['object']['name'] + " !!");
-                        Simulator.__next_Catcher = perception['object']['name'];
+                        Log.debug(entity.name + " catches " + perception['object']['name'] + " !!");
+						
+						EntityCollection.catchEntity(perception['object']);
+                        /*Simulator.__next_Catcher = perception['object']['name'];
 
                         Simulator.stop();
                         Simulator.__step_count = 0;
 						Simulator.__last_marko = -1000;
-                        load_bobbel_data();
+                        load_bobbel_data();*/
                     }
 				}
 				if (!entity.isCatcher && sensor === 'see') {
@@ -172,11 +199,15 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         entity.move(entity.speed);
     } else if (entity.isCatcher) {
         if (entity.nodeOfInterest != null) {
+			var delta = 15;
 			var rot_delta = entity.getDirDelta();
 			entity.rotate(rot_delta);
             entity.move(entity.speed);
+			if(Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < delta)
+				entity.nodeOfInterest = null;
 			if(entity.movementRestricted) {
-				EntityCollection.checkFishOutOfWater();
+				Log.debug("FISCHE AUS DEM WASSER!!");
+				EntityCollection.checkFishOutOfWater(entity);
 				if(entity.isCatcher)						//Check if Round continues
                     entity.nodeOfInterest = null;
             }
