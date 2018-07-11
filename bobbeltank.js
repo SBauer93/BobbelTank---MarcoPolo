@@ -72,7 +72,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 	//Idle if new marco within cooldown
 	if(entity.isCatcher && Simulator.__last_catch + catchedCoolDown > step_count) {
 		//TODO: Bring fish into water
-		var bubbleRadius = 15;
+/* 		var bubbleRadius = 15;
 		var insideX = entity.posX;
 		var insideY = entity.posY;
 		if(insideX < 120 || insideX > 1300 || insideY < 120 || insideY > 800) {
@@ -88,7 +88,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 			var rot_delta = entity.getDirDelta(insideX, insideY);
 			entity.rotate(rot_delta);
 			entity.move(entity.speed);
-		}
+		} */
 		
 		return;
 	}
@@ -128,7 +128,6 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 
                                         var est_pos = entity.roughPosition(posX, posY, marcoFac, poloFac);
                                         entity.setPosNodeOfInterest(est_pos[0], est_pos[1]);
-                                        Log.debug(entity.name + ': AHH CATCHER !!!');
                                     }
 									else {
                                         entity.nodeOfInterest = null;
@@ -228,7 +227,6 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             entity.move(entity.speed);
         } else {
             if (entity.isOutside) {
-                Log.debug('!!!!!!!!!********OUTSIDE*******!!!!!!');
                 if (Math.random() > 0.5) {
                     entity.rotate(5);
                 } else {

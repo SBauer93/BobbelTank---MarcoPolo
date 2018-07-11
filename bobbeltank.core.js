@@ -744,10 +744,8 @@ var EntityCollection = {
         var entities = EntityCollection.getEntities();
         var outsideEntities = [];
         for (var index in entities) {
-            Log.debug("Check entity: " +  entities[index].name);
             // Check if entities is outside playground
             if(entities[index].posX < 120 || entities[index].posX > 1300 || entities[index].posY < 120 || entities[index].posY > 800) {
-                Log.debug("*******entities pushed: " +  entities[index].name);
                 outsideEntities.push(entities[index]);
             }
         }
@@ -806,13 +804,16 @@ var EntityCollection = {
 		
         for (var i in EntityCollection.__entities) {
 			EntityCollection.__entities[i].isCatcher = false;
-			EntityCollection.__entities[i].defineSensors();
+            EntityCollection.__entities[i].defineSensors();
+            
+            EntityCollection.__entities[i].hasShouted = false;
+            EntityCollection.__entities[i].shouts = false;
+            EntityCollection.__entities[i].nodeOfInterest = null;
 		}
 		
 		entity.isCatcher = true;
 		entity.defineSensors();
-		entity.hasShouted = true;
-		entity.shouts = true;
+
 	}
 };
 
@@ -899,7 +900,7 @@ function Entity(entity_object, sensors_object) {
         }
     }
 
-    this.isOutside = (this.posX < 120 || this.posX > 1300 || this.posY < 120 || this.posY > 800);
+    this.isOutside = (this.posX <= 120 || this.posX >= 1300 || this.posY <= 120 || this.posY >= 800);
 
     //transfer definitions of attached sensors into entity (only if definitions exist)
 	this.defineSensors();
@@ -912,7 +913,7 @@ function Entity(entity_object, sensors_object) {
 };
 
 Entity.prototype.checkIfOutside = function() {
-    this.isOutside = (this.posX < 120 || this.posX > 1300 || this.posY < 120 || this.posY > 800);    
+    this.isOutside = (this.posX <= 120 || this.posX >= 1300 || this.posY <= 120 || this.posY >= 800);    
 };
 
 /**
@@ -962,8 +963,9 @@ Entity.prototype.setPosNodeOfInterest = function(posX, posY) {
 Entity.prototype.estimateDirection = function(posX2, posY2, certainty) {
     var posX1 = this.posX;
     var posY1 = this.posY;
-
-    return Math.asin((posY2-posY1)/Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2));
+    var dist = Entity.__distanceBetweenTwoPoints(posX1, posY1, posX2, posY2);
+    if (dist === 0) { dist = 1;}
+    return Math.asin((posY2-posY1)/dist);
 }
 Entity.prototype.roughPosition = function(posX, posY, marcoFactor, poloFactor){
     var factor = this.isCatcher ? marcoFactor : poloFactor;
