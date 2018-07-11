@@ -53,7 +53,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
     
     var marcoCoolDown = 250;
 	var marcoHearRange = 300;
-	var poloHearRange = 250;
+	var poloHearRange = 350;
 	
     var marcoFac = 20;
     var poloFac = 25
@@ -99,18 +99,22 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 									if (perceptions[sensor][index]['distance'] < poloHearRange*entity.precision) {
                                         var posX = perceptions[sensor][index]['object']['posX'];
                                         var posY = perceptions[sensor][index]['object']['posY'];
+                                        entity.panic = true;
 
                                         var est_pos = entity.roughPosition(posX, posY, marcoFac, poloFac);
                                         entity.setPosNodeOfInterest(est_pos[0], est_pos[1]);
+                                        Log.debug(entity.name + ': AHH CATCHER !!!');
                                     }
-									else
-										entity.nodeOfInterest = null;
+									else {
+                                        entity.nodeOfInterest = null;
+                                        entity.panic = false;
+                                    }
                                 }
 							} else					// Catcher
                                 if ((closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance'] + marcoUncertainty*entity.precision ) 
                                         && perceptions[sensor][index]['distance'] + marcoUncertainty*entity.precision < marcoHearRange)
                                     closest_node = perceptions[sensor][index];
-						}
+                        }
 					}
 
 					if (perception['type'] === 'Edge-Object'){
@@ -119,8 +123,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 							Tank.displayEdge(intersectionsList[0], intersectionsList[1], 'yellow');
 						}
 						perception_log.push(("(" + perceptions[sensor][index]['object']['name'] + ") "));
-					}
-				}
+                    }
+                }
 				if (entity.isCatcher && sensor === 'feel') {
                     var perception = perceptions[sensor][index];
                     if (perception['type'] === 'Entity-Object') {
@@ -139,7 +143,12 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
                         Log.debug(entity.name + " sees " + perception['object']['name'] + " !!");
 						entity.setPosNodeOfInterest(perceptions[sensor][index]['object']['posX'], perceptions[sensor][index]['object']['posY']);
                     }
-				}
+                }
+                if (perceptions[sensor][index]['type'] === 'Edge-Object' && sensor !== 'hear') {
+                    entity.edgeDetected = true;
+                } else {
+                    entity.edgeDetected = false;
+                }
             }
             // Log.debug(entity.name + " " + sensor + "'s [" + perception_log+']' , 3, entity.uuid+sensor+'name');
         }
@@ -187,12 +196,29 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
                 entity.rotate(rot_delta - Math.random()*5);
             entity.move(entity.speed);
         } else {
-            if (Math.random() > 0.5) {
-                entity.rotate(5);
-            } else {
-                entity.rotate(-5);
-            }
-            entity.move(entity.speed);   
+            if (entity.isOutside) {
+                Log.debug('!!!!!!!!!********OUTSIDE*******!!!!!!');
+                if (Math.random() > 0.5) {
+                    entity.rotate(5);
+                } else {
+                    entity.rotate(-5);
+                }
+                entity.move(entity.speed);
+            } else if (entity.edgeDetected){
+                if (Math.random() > 0.5) {
+                    entity.rotate(60);
+                } else {
+                    entity.rotate(60);
+                }
+                entity.move(entity.speed);
+            } else if (!entity.edgeDetected) {
+                if (Math.random() > 0.5) {
+                    entity.rotate(5);
+                } else {
+                    entity.rotate(-5);
+                }
+                entity.move(entity.speed); 
+            }  
         } 
     }
 };/**

@@ -857,6 +857,9 @@ function Entity(entity_object, sensors_object) {
     this.speed = entity_object['speed'];
     this.precision = entity_object['precision'];
     this.sight = entity_object['sight'];
+    this.panic = false;
+    this.edgeDetected = false;
+    this.isOutside = false;
 
     this.hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
     //only sets position if input pos is array with length 2
@@ -875,6 +878,8 @@ function Entity(entity_object, sensors_object) {
             this.direction = entity_object['direction'] | 0;
         }
     }
+
+    this.isOutside = (this.posX < 120 || this.posX > 1300 || this.posY < 120 || this.posY > 800);
 
     //transfer definitions of attached sensors into entity (only if definitions exist)
     var perceptionTags = entity_object['perceptions'];
@@ -914,6 +919,10 @@ function Entity(entity_object, sensors_object) {
     this.uuid = s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 };
 
+Entity.prototype.checkIfOutside = function() {
+    this.isOutside = (this.posX < 120 || this.posX > 1300 || this.posY < 120 || this.posY > 800);    
+};
+
 /**
  * Moves entity distance px along current direction
  * @param distance
@@ -945,6 +954,8 @@ Entity.prototype.move = function(distance) {
         this.posX = newPos[0];
         this.posY = newPos[1];
     }
+
+    this.checkIfOutside();
 
     this.updateSensors();
 };
