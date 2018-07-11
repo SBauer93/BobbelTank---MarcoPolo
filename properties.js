@@ -46,6 +46,9 @@ var bobbel_entities =
             direction: 0,
             perceptions : ["see", "hear", "feel"],
             color: "green",
+            speed: 4,
+            precision: 1,
+            sight: 1, 
             isCatcher: true
         }, {
             name: "Mouse",
@@ -54,11 +57,17 @@ var bobbel_entities =
             position: [choosePositions(200), choosePositions(200)],
             perceptions : ["see", "hear", "feel"],
             color: "black",
+            speed: 7,
+            precision: 0.7,
+            sight: 0.5,
             isCatcher: false
         }, {
             name: "Malotzki",
             image: "images/150x150_bubble.png",
             color: "cyan",
+            speed: 5,
+            precision: 1.2,
+            sight: 0.9,
             position: [choosePositions(200), choosePositions(730)],
             perceptions : ["see", "hear", "feel"],
             direction : 20,
@@ -68,6 +77,9 @@ var bobbel_entities =
             image: "images/150x150_bubble.png",
             position: [choosePositions(1230), choosePositions(730)],
             color: "red",
+            speed: 4,
+            precision: 0.5,
+            sight: 1.2,
             perceptions : ["see", "hear", "feel"],
             isCatcher: false
         }, {
@@ -75,6 +87,9 @@ var bobbel_entities =
             image: "images/150x150_bubble.png",
             position: [choosePositions(1230), choosePositions(200)],
             color: "blue",
+            speed: 5,
+            precision: 1.1,
+            sight: 0.9,
             perceptions : ["see", "hear", "feel"],
             isCatcher: false
         }, {
@@ -82,6 +97,9 @@ var bobbel_entities =
             image: "images/150x150_bubble.png",
             position: [choosePositions(540), choosePositions(160)],
             color: "yellow",
+            speed: 4,
+            precision: 0.6,
+            sight: 1.2,
             perceptions : ["see", "hear", "feel"],
             isCatcher: false
         }, {
@@ -89,6 +107,9 @@ var bobbel_entities =
             image: "images/150x150_bubble.png" ,
             position: [choosePositions(840), choosePositions(760)],
             color: "pink",
+            speed: 2,
+            precision: 0.3,
+            sight: 1.6,
             perceptions: ["see", "hear", "feel"],
             isCatcher: false 
         }
@@ -133,7 +154,7 @@ var bobbel_sensors = {
     },
     feel: {
         perimeter: [[40,17.57], [17.57,40], [-17.57,40], [-40,17.57], [-40,-17.57], [-17.57,-40], [17.57,-40], [40,-17.57]],
-        color : "orange"
+        //color : "orange"
     },
 
 };

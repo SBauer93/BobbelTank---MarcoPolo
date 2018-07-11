@@ -96,7 +96,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 									Log.debug('POLO !');
 									entity.shouts = true;
 									entity.hasShouted = true;
-									if (perceptions[sensor][index]['distance'] < poloHearRange) {
+									if (perceptions[sensor][index]['distance'] < poloHearRange*entity.precision) {
                                         var posX = perceptions[sensor][index]['object']['posX'];
                                         var posY = perceptions[sensor][index]['object']['posY'];
 
@@ -107,8 +107,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 										entity.nodeOfInterest = null;
                                 }
 							} else					// Catcher
-                                if ((closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance'] + marcoUncertainty ) 
-                                        && perceptions[sensor][index]['distance'] + marcoUncertainty < marcoHearRange)
+                                if ((closest_node === null || closest_node['distance'] > perceptions[sensor][index]['distance'] + marcoUncertainty*entity.precision ) 
+                                        && perceptions[sensor][index]['distance'] + marcoUncertainty*entity.precision < marcoHearRange)
                                     closest_node = perceptions[sensor][index];
 						}
 					}
@@ -160,12 +160,12 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         } else {
             entity.rotate(-5);
         }
-        entity.move(4);
+        entity.move(entity.speed);
     } else if (entity.isCatcher) {
         if (entity.nodeOfInterest != null) {
 			var rot_delta = entity.getDirDelta();
 			entity.rotate(rot_delta);
-            entity.move(4);
+            entity.move(entity.speed);
 			if(entity.movementRestricted) {
 				EntityCollection.checkFishOutOfWater();
 				if(entity.isCatcher)						//Check if Round continues
@@ -177,7 +177,7 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             } else {
                 entity.rotate(-5);
             }
-            entity.move(4);
+            entity.move(entity.speed);
         }
     } else if (!entity.isCatcher) {  
         if (entity.nodeOfInterest != null) {
@@ -185,14 +185,14 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
             if (Math.random() > 0.5)                entity.rotate(rot_delta + Math.random()*5);
             else
                 entity.rotate(rot_delta - Math.random()*5);
-            entity.move(4);
+            entity.move(entity.speed);
         } else {
             if (Math.random() > 0.5) {
                 entity.rotate(5);
             } else {
                 entity.rotate(-5);
             }
-            entity.move(4);   
+            entity.move(entity.speed);   
         } 
     }
 };/**

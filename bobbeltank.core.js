@@ -854,6 +854,9 @@ function Entity(entity_object, sensors_object) {
     this.isCatcher = this.name === Simulator.__next_Catcher ? true : false;
     this.nodeOfInterest = [0, 0];		// current pos of the node, which affects the next movement, e.g. the catcher
     this.shouts = false;				// Signal the shouting to other entities
+    this.speed = entity_object['speed'];
+    this.precision = entity_object['precision'];
+    this.sight = entity_object['sight'];
 
     this.hasShouted = false // Checks, whether the Entity already set the 'shout' attribute to 'true'
     //only sets position if input pos is array with length 2
