@@ -72,6 +72,25 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 	//Idle if new marco within cooldown
 	if(entity.isCatcher && Simulator.__last_catch + catchedCoolDown > step_count) {
 		//TODO: Bring fish into water
+		var bubbleRadius = 15;
+		var insideX = entity.posX;
+		var insideY = entity.posY;
+		if(insideX < 120 || insideX > 1300 || insideY < 120 || insideY > 800) {
+			if (insideX < 120)
+				insideX = 120 + bubbleRadius;
+			if (insideX > 1300)
+				insideX = 1300 - bubbleRadius;
+			if (insideY < 120)
+				insideY = 120 + bubbleRadius;
+			if (insideY > 800)
+				insideY = 800 - bubbleRadius;
+			
+			var rot_delta = entity.getDirDelta(insideX, insideY);
+			Log.error(rot_delta + " = " + entity.posX + " + " + insideY);
+			entity.rotate(rot_delta);
+			entity.move(entity.speed);
+		}
+		
 		return;
 	}
 	

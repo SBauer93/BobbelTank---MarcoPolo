@@ -754,7 +754,6 @@ var EntityCollection = {
 
         if (outsideEntities.length > 0) {
             var nextCatcher = outsideEntities[Math.floor(Math.random() * (outsideEntities.length-1))];
-            Log.debug("NEXT CATCHER: " + nextCatcher.name);
 			
 			EntityCollection.catchEntity(nextCatcher);
 			/*Simulator.__next_Catcher = nextCatcher.name;
@@ -802,6 +801,7 @@ var EntityCollection = {
     },
 	
 	catchEntity: function(entity) {
+		Log.error("NEXT CATCHER: " + entity.name);
 		Simulator.__last_catch = Simulator.__step_count;
 		
         for (var i in EntityCollection.__entities) {
@@ -965,8 +965,12 @@ Entity.prototype.roughPosition = function(posX, posY, marcoFactor, poloFactor){
 
  * Called by the catcher and, initially, by the other bobbels, too. Used to get direction.
 */
-Entity.prototype.getDirDelta = function() {
-	var dir = this.estimateDirection(this.nodeOfInterest[0], this.nodeOfInterest[1], 20);
+Entity.prototype.getDirDelta = function(x, y) {
+	if(x == undefined) {
+		x = this.nodeOfInterest[0]
+		y = this.nodeOfInterest[1]
+	}
+	var dir = this.estimateDirection(x, y, 20);
 	var diff = Math.abs(dir - this.direction);
 
 	if(this.isCatcher)
