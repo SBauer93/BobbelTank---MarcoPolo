@@ -86,7 +86,6 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 				insideY = 800 - bubbleRadius;
 			
 			var rot_delta = entity.getDirDelta(insideX, insideY);
-			Log.error(rot_delta + " = " + entity.posX + " + " + insideY);
 			entity.rotate(rot_delta);
 			entity.move(entity.speed);
 		}
@@ -150,9 +149,9 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 				if (entity.isCatcher && sensor === 'feel') {
                     var perception = perceptions[sensor][index];
                     if (perception['type'] === 'Entity-Object') {
-                        Log.error(entity.name + " catches " + perception['object']['name'] + " !!");
+                        Log.debug(entity.name + " catches " + perception['object']['name'] + " !!");
 						
-						EntityCollection.catchEntity(entity);
+						EntityCollection.catchEntity(perception['object']);
                         /*Simulator.__next_Catcher = perception['object']['name'];
 
                         Simulator.stop();
@@ -191,9 +190,12 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
         entity.move(entity.speed);
     } else if (entity.isCatcher) {
         if (entity.nodeOfInterest != null) {
+			var delta = 15;
 			var rot_delta = entity.getDirDelta();
 			entity.rotate(rot_delta);
             entity.move(entity.speed);
+			if(Entity.__distanceBetweenTwoPoints(entity.posX, entity.posY, entity.nodeOfInterest[0], entity.nodeOfInterest[1]) < delta)
+				entity.nodeOfInterest = null;
 			if(entity.movementRestricted) {
 				Log.debug("FISCHE AUS DEM WASSER!!");
 				EntityCollection.checkFishOutOfWater(entity);
