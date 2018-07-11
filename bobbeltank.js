@@ -52,23 +52,30 @@ var perform_simulation_step_initialization = function(entity_list, step_count){
 var perform_simulation_step_on_entity = function(entity, perceptions, step_count){
     
     var marcoCoolDown = 250;
+	var catchedCoolDown = 300;
 	var marcoHearRange = 300;
 	var poloHearRange = 250;
 	
     var marcoFac = 20;
-    var poloFac = 25
-    
+    var poloFac = 25;
     var marcoUncertainty = Math.random() > 0.5 ? Math.random() * marcoFac : -Math.random() * marcoFac;
     var poloUncertainty = Math.random() > 0.5 ? Math.random() * poloFac : -Math.random() * poloFac;  
 	
-	//Shout Marco-Polo
-	
+	//Stop Shouting
 	if(entity.shouts) {
 		if(entity.hasShouted)
 			entity.hasShouted = false;
 		else
 			entity.shouts = false;
 	}
+	
+	//Idle if new marco within cooldown
+	if(entity.isCatcher && Simulator.__last_catch + catchedCoolDown > step_count) {
+		//TODO: Bring fish into water
+		return;
+	}
+	
+	//Shout Marco
 	if(entity.isCatcher && Simulator.__last_marko + marcoCoolDown < step_count) {
         entity.shouts = true;
         Log.debug('MARCO ! (at ' + step_count + ')');
@@ -125,12 +132,14 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
                     var perception = perceptions[sensor][index];
                     if (perception['type'] === 'Entity-Object') {
                         Log.error(entity.name + " catches " + perception['object']['name'] + " !!");
-                        Simulator.__next_Catcher = perception['object']['name'];
+						
+						EntityCollection.catchEntity(entity);
+                        /*Simulator.__next_Catcher = perception['object']['name'];
 
                         Simulator.stop();
                         Simulator.__step_count = 0;
 						Simulator.__last_marko = -1000;
-                        load_bobbel_data();
+                        load_bobbel_data();*/
                     }
 				}
 				if (!entity.isCatcher && sensor === 'see') {
@@ -167,7 +176,8 @@ var perform_simulation_step_on_entity = function(entity, perceptions, step_count
 			entity.rotate(rot_delta);
             entity.move(entity.speed);
 			if(entity.movementRestricted) {
-				EntityCollection.checkFishOutOfWater();
+				Log.debug("FISCHE AUS DEM WASSER!!");
+				EntityCollection.checkFishOutOfWater(entity);
 				if(entity.isCatcher)						//Check if Round continues
                     entity.nodeOfInterest = null;
             }
