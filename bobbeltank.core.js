@@ -884,8 +884,10 @@ function Entity(entity_object, sensors_object) {
     if (Array.isArray(pos) && pos.length === 2) {
         if (this.isCatcher === true) {
             // If bobbel is choosen as catcher, position him approx. in the middle of the area.
-            this.posX = 590;
-            this.posY = 500;
+            // this.posX = 590;
+            // this.posY = 500;
+            this.posX = pos[0];
+            this.posY = pos[1];
             this.direction = entity_object['direction'] | 0;
         } else {
             this.posX = pos[0];
